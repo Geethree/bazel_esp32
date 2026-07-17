@@ -1,0 +1,8 @@
+package(default_visibility = ["//:__subpackages__"])
+
+exports_files([
+    "boards.bzl",
+    "flash.bzl",
+    "repositories.bzl",
+    "transitions.bzl",
+])

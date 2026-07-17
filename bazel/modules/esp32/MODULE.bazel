@@ -1,0 +1,38 @@
+module(
+    name = "rules_esp32",
+    version = "0.1.0",
+    bazel_compatibility = [">=9.0.0"],
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_rs", version = "0.0.96")
+
+toolchains = use_extension("@rules_rs//rs/toolchains:module_extension.bzl", "toolchains")
+toolchains.toolchain(
+    edition = "2024",
+    extra_rustc_flags = {
+        "riscv32imac-unknown-none-elf": [
+            "-Cforce-frame-pointers=yes",
+            "-Clink-arg=-Tlinkall.x",
+            "-Copt-level=s",
+        ],
+    },
+    version = "1.96.1",
+)
+
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
+crate.annotation(
+    additive_build_file = "//crates:esp-config-0.7.0.BUILD.bazel",
+    crate = "esp-config",
+    override_target_lib = "esp-config-contextual",
+    repositories = ["crates"],
+    version = "0.7.0",
+)
+crate.annotation(
+    additive_build_file = "//crates:esp-metadata-generated-0.4.0.BUILD.bazel",
+    crate = "esp-metadata-generated",
+    override_target_lib = "esp-metadata-generated-contextual",
+    repositories = ["crates"],
+    version = "0.4.0",
+)

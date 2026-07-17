@@ -1,0 +1,66 @@
+From b58037d6927c687d627a7f82c6fc61d9bfb0e08b Mon Sep 17 00:00:00 2001
+From: Gerald Spencer <contact@geraldhspencer.com>
+Date: Fri, 17 Jul 2026 16:42:02 -0400
+Subject: [PATCH] feat: allow overriding generated crate library targets
+
+---
+ rs/extensions.bzl          | 11 ++++++++++-
+ rs/private/annotations.bzl |  2 ++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/rs/extensions.bzl b/rs/extensions.bzl
+index 03c1432..cc6e3be 100644
+--- a/rs/extensions.bzl
++++ b/rs/extensions.bzl
+@@ -432,11 +432,17 @@ crate.annotation(
+             target_repo_name = package["target_repo_name"]
+             target_package_path = package["target_package_path"]
+ 
++            actual = _target_label(
++                target_repo_name,
++                target_package_path,
++                annotation.override_target_lib or name,
++            )
++
+             hub_contents.append("""
+ alias(
+     name = "{name}-{version}",
+     actual = "{actual}",
+-)""".format(name = name, version = version, actual = _target_label(target_repo_name, target_package_path, name)))
++)""".format(name = name, version = version, actual = actual))
+ 
+             for binary in annotation.gen_binaries:
+                 hub_contents.append("""
+@@ -948,6 +954,9 @@ _annotation = tag_class(
+         "extra_aliased_targets": attr.string_dict(
+             doc = "A dictionary mapping alias names in the hub repository to target names in the generated crate package.",
+         ),
++        "override_target_lib": attr.string(
++            doc = "An alternate library target name in the generated crate package for dependency aliases.",
++        ),
+         # "gen_all_binaries": attr.bool(
+         #     doc = "If true, generates `rust_binary` targets for all of the crates bins",
+         # ),
+diff --git a/rs/private/annotations.bzl b/rs/private/annotations.bzl
+index 2e739c0..244f0bc 100644
+--- a/rs/private/annotations.bzl
++++ b/rs/private/annotations.bzl
+@@ -18,6 +18,7 @@ def _crate_annotation(
+         crate_features_select = {},
+         gen_binaries = [],
+         extra_aliased_targets = {},
++        override_target_lib = "",
+         rustc_flags = [],
+         rustc_flags_select = {},
+         patch_args = [],
+@@ -45,6 +46,7 @@ def _crate_annotation(
+         crate_features_select = crate_features_select,
+         gen_binaries = gen_binaries,
+         extra_aliased_targets = extra_aliased_targets,
++        override_target_lib = override_target_lib,
+         rustc_flags = rustc_flags,
+         rustc_flags_select = rustc_flags_select,
+         patch_args = patch_args,
+-- 
+2.50.0
+

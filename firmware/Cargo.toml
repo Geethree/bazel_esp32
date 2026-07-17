@@ -1,0 +1,15 @@
+[package]
+name = "esp32c6-firmware"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "hello"
+path = "src/main.rs"
+
+[dependencies]
+critical-section = "1.2.0"
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32c6"] }
+esp-hal = { version = "~1.1.0", features = ["esp32c6"] }
+esp-println = { version = "0.17.0", default-features = false, features = ["esp32c6", "jtag-serial"] }

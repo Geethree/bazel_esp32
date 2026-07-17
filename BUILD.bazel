@@ -1,0 +1,11 @@
+load("//bazel/rules/rust:defs.bzl", "rust_lockfile")
+
+exports_files([
+    "Cargo.lock",
+    "Cargo.toml",
+])
+
+rust_lockfile(
+    name = "update_lock",
+    manifest = ":Cargo.toml",
+)

@@ -1,0 +1,25 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_esp32//:defs.bzl", "esp32_flash")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+
+exports_files(["Cargo.toml"])
+
+rust_binary(
+    name = "hello",
+    srcs = ["src/main.rs"],
+    aliases = aliases(),
+    target_compatible_with = select({
+        "@rules_esp32//platforms:is_esp32c6": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = all_crate_deps(
+        normal = True,
+    ),
+)
+
+esp32_flash(
+    name = "flash",
+    board = "esp32c6",
+    espflash = "@espflash//:espflash",
+    firmware = ":hello",
+)

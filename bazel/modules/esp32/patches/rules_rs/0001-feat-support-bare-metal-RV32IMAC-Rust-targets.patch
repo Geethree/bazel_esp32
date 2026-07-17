@@ -1,0 +1,94 @@
+From c5ebcf013d8645465d8097d407a36a2b803da416 Mon Sep 17 00:00:00 2001
+From: Gerald Spencer <contact@geraldhspencer.com>
+Date: Fri, 17 Jul 2026 15:59:40 -0400
+Subject: [PATCH] feat: support bare-metal RV32IMAC Rust targets
+
+---
+ rs/platforms/constraints/BUILD.bazel       | 20 ++++++++++++++++++++
+ rs/platforms/triples.bzl                   | 11 ++++++++++-
+ rs/toolchains/declare_rustc_toolchains.bzl |  2 ++
+ 3 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/rs/platforms/constraints/BUILD.bazel b/rs/platforms/constraints/BUILD.bazel
+index b5751eb..53e6551 100644
+--- a/rs/platforms/constraints/BUILD.bazel
++++ b/rs/platforms/constraints/BUILD.bazel
+@@ -19,6 +19,26 @@ constraint_value(
+     constraint_setting = "linux_libc",
+ )
+ 
++constraint_setting(
++    # Bare-metal RISC-V target triples can share the same Bazel CPU and OS
++    # constraints while enabling different ISA extensions. Default to the
++    # previously supported RV32IMC target so existing custom riscv32/none
++    # platforms continue to resolve to the same Rust toolchain.
++    name = "riscv_isa",
++    default_constraint_value = "rv32imc",
++)
++
++constraint_value(
++    name = "rv32imc",
++    constraint_setting = "riscv_isa",
++)
++
++constraint_value(
++    # ESP32-C6 and ESP32-H2 use the atomic-capable RV32IMAC target.
++    name = "rv32imac",
++    constraint_setting = "riscv_isa",
++)
++
+ constraint_setting(
+     # Disambiguates ARM soft-float vs hard-float target triples that otherwise
+     # project to identical constraint sets (e.g. arm-unknown-linux-gnueabi vs
+diff --git a/rs/platforms/triples.bzl b/rs/platforms/triples.bzl
+index 22a79a1..e3fe0e4 100644
+--- a/rs/platforms/triples.bzl
++++ b/rs/platforms/triples.bzl
+@@ -4,6 +4,11 @@ load(
+     _triple_to_constraint_set = "triple_to_constraint_set",
+ )
+ 
++_RISCV_ISA_CONSTRAINTS = {
++    "riscv32imac-unknown-none-elf": "@rules_rs//rs/platforms/constraints:rv32imac",
++    "riscv32imc-unknown-none-elf": "@rules_rs//rs/platforms/constraints:rv32imc",
++}
++
+ def triple_to_rust_constraint_set(target_triple):
+     constraints = _triple_to_constraint_set(target_triple)
+     t = triple(target_triple)
+@@ -22,6 +27,10 @@ def triple_to_rust_constraint_set(target_triple):
+         if t.abi in ("gnu", "gnullvm"):
+             constraints.append("@llvm//constraints/windows/crt:msvcrt")
+ 
++    riscv_isa_constraint = _RISCV_ISA_CONSTRAINTS.get(target_triple)
++    if riscv_isa_constraint:
++        constraints.append(riscv_isa_constraint)
++
+     if target_triple.endswith("eabihf") or target_triple == "aarch64-unknown-none":
+         constraints.append("@rules_rs//rs/platforms/constraints:hardfloat")
+     elif target_triple.endswith("eabi") or target_triple == "aarch64-unknown-none-softfloat":
+@@ -134,7 +143,7 @@ SUPPORTED_TIER_1_AND_2_TRIPLES = [
+     #"nvptx64-nvidia-cuda",             # * –emit=asm generates PTX code that runs on NVIDIA GPUs
+     # "riscv32i-unknown-none-elf",       # * Bare RISC-V (RV32I ISA)
+     # "riscv32im-unknown-none-elf",      # * Bare RISC-V (RV32IM ISA)
+-    # "riscv32imac-unknown-none-elf",    # * Bare RISC-V (RV32IMAC ISA)
++    "riscv32imac-unknown-none-elf",  # * Bare RISC-V (RV32IMAC ISA)
+     # "riscv32imafc-unknown-none-elf",   # * Bare RISC-V (RV32IMAFC ISA)
+     "riscv32imc-unknown-none-elf",  # * Bare RISC-V (RV32IMC ISA)
+     "riscv64gc-unknown-linux-musl",  # ✓ RISC-V Linux (kernel 4.20+, musl 1.2.5)
+diff --git a/rs/toolchains/declare_rustc_toolchains.bzl b/rs/toolchains/declare_rustc_toolchains.bzl
+index f005485..537c149 100644
+--- a/rs/toolchains/declare_rustc_toolchains.bzl
++++ b/rs/toolchains/declare_rustc_toolchains.bzl
+@@ -90,6 +90,8 @@ def declare_rustc_toolchains(
+             llvm_cov = "@llvm//tools:llvm-cov",
+             llvm_profdata = "@llvm//tools:llvm-profdata",
+             linker = select({
++                "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": "{}rust-lld".format(rustc_repo_label),
++                "@rules_rs//rs/platforms/config:riscv32imc-unknown-none-elf": "{}rust-lld".format(rustc_repo_label),
+                 "@platforms//cpu:wasm32": "{}rust-lld".format(rustc_repo_label),
+                 "@platforms//cpu:wasm64": "{}rust-lld".format(rustc_repo_label),
+                 "//conditions:default": None,
+-- 
+2.50.0
+

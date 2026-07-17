@@ -1,0 +1,13 @@
+# Overrides only take effect when this file is included by the root module.
+# Keep this list ordered: each patch is based on the preceding patch.
+single_version_override(
+    module_name = "rules_rs",
+    patch_strip = 1,
+    patches = [
+        "//bazel/modules/esp32/patches/rules_rs:0001-feat-support-bare-metal-RV32IMAC-Rust-targets.patch",
+        "//bazel/modules/esp32/patches/rules_rs:0002-feat-allow-overriding-generated-crate-library-target.patch",
+        "//bazel/modules/esp32/patches/rules_rs:0003-fix-normalize-RISC-V-target-arch-in-Cargo-cfgs.patch",
+        "//bazel/modules/esp32/patches/rules_rs:0004-feat-allow-dependency-modules-to-annotate-crate-repo.patch",
+    ],
+    version = "0.0.96",
+)

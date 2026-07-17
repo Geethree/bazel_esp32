@@ -1,0 +1,19 @@
+package(default_visibility = ["//visibility:public"])
+
+constraint_setting(name = "chip")
+
+constraint_value(
+    name = "chip_esp32c6",
+    constraint_setting = ":chip",
+)
+
+config_setting(
+    name = "is_esp32c6",
+    constraint_values = [":chip_esp32c6"],
+)
+
+platform(
+    name = "esp32c6",
+    constraint_values = [":chip_esp32c6"],
+    parents = ["@rules_rs//rs/platforms:riscv32imac-unknown-none-elf"],
+)

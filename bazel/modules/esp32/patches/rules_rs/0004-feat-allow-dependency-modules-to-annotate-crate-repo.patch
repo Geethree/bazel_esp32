@@ -1,0 +1,191 @@
+From 4f2f46cdc4c62c2d1d622f8885970b6f3f776ad5 Mon Sep 17 00:00:00 2001
+From: Gerald Spencer <contact@geraldhspencer.com>
+Date: Fri, 17 Jul 2026 17:31:10 -0400
+Subject: [PATCH] feat: allow dependency modules to annotate crate repositories
+
+---
+ rs/extensions.bzl               | 11 +++----
+ rs/private/BUILD.bazel          | 12 ++++++++
+ rs/private/annotations.bzl      | 21 +++++++------
+ rs/private/annotations_test.bzl | 54 +++++++++++++++++++++++++++++++++
+ 4 files changed, 81 insertions(+), 17 deletions(-)
+ create mode 100644 rs/private/annotations_test.bzl
+
+diff --git a/rs/extensions.bzl b/rs/extensions.bzl
+index cc6e3be..f7c88cc 100644
+--- a/rs/extensions.bzl
++++ b/rs/extensions.bzl
+@@ -653,11 +653,8 @@ def _crate_impl(mctx):
+     annotations_by_hub_name = {}
+ 
+     for mod in mctx.modules:
+-        if not mod.tags.from_cargo:
+-            fail("`.from_cargo` is required. Please update %s" % mod.name)
+-
+         for cfg in mod.tags.from_cargo:
+-            annotations = build_annotation_map(mod, cfg.name)
++            annotations = build_annotation_map(mctx.modules, cfg.name)
+             annotations_by_hub_name[cfg.name] = annotations
+             mctx.watch(cfg.cargo_lock)
+             mctx.watch(cfg.cargo_toml)
+@@ -674,7 +671,7 @@ def _crate_impl(mctx):
+ 
+     for mod in mctx.modules:
+         for cfg in mod.tags.from_cargo:
+-            annotations = build_annotation_map(mod, cfg.name)
++            annotations = build_annotation_map(mctx.modules, cfg.name)
+ 
+             if cfg.use_home_cargo_credentials:
+                 if not cfg.cargo_config:
+@@ -727,7 +724,7 @@ def _crate_impl(mctx):
+             hub_packages = packages_by_hub_name[cfg.name]
+             cargo_credentials = cargo_credentials_by_hub_name[cfg.name]
+ 
+-            annotations = build_annotation_map(mod, cfg.name)
++            annotations = build_annotation_map(mctx.modules, cfg.name)
+ 
+             if cfg.debug:
+                 for _ in range(25):
+@@ -739,7 +736,7 @@ def _crate_impl(mctx):
+     git_repos = {}
+     for mod in mctx.modules:
+         for cfg in mod.tags.from_cargo:
+-            annotations = build_annotation_map(mod, cfg.name)
++            annotations = build_annotation_map(mctx.modules, cfg.name)
+             for package in packages_by_hub_name[cfg.name]:
+                 source = package.get("source", "")
+                 if not source.startswith("git+"):
+diff --git a/rs/private/BUILD.bazel b/rs/private/BUILD.bazel
+index ba3139e..df7e195 100644
+--- a/rs/private/BUILD.bazel
++++ b/rs/private/BUILD.bazel
+@@ -2,6 +2,7 @@ load("@bazel_lib//:bzl_library.bzl", "bzl_library")
+ load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
+ load("@rules_rust//rust:defs.bzl", "rust_stdlib_filegroup")
+ load(":all_crate_deps_test.bzl", "all_crate_deps_tests")
++load(":annotations_test.bzl", "annotations_tests")
+ load(":bindgen_test.bzl", "bindgen_tests")
+ load(":bpf_linker_repository_test.bzl", "bpf_linker_repository_tests")
+ load(":cargo_workspace_graph_test.bzl", "cargo_workspace_graph_tests")
+@@ -23,6 +24,8 @@ rust_stdlib_filegroup(
+ 
+ all_crate_deps_tests()
+ 
++annotations_tests()
++
+ bindgen_tests()
+ 
+ bpf_linker_repository_tests()
+@@ -311,6 +314,15 @@ bzl_library(
+     visibility = ["//rs:__subpackages__"],
+ )
+ 
++bzl_library(
++    name = "annotations_test",
++    srcs = ["annotations_test.bzl"],
++    deps = [
++        ":annotations",
++        "@bazel_skylib//lib:unittest",
++    ],
++)
++
+ bzl_library(
+     name = "cfg_parser",
+     srcs = ["cfg_parser.bzl"],
+diff --git a/rs/private/annotations.bzl b/rs/private/annotations.bzl
+index 244f0bc..874fea5 100644
+--- a/rs/private/annotations.bzl
++++ b/rs/private/annotations.bzl
+@@ -97,18 +97,19 @@ def annotation_for(annotations_by_crate, crate_name, version, hub_name):
+         return _windows_gnullvm_implicit_annotation(crate_name, version, hub_name)
+     return _DEFAULT_CRATE_ANNOTATION
+ 
+-def build_annotation_map(mod, cfg_name):
+-    """Build mapping {crate: {version|\"*\": annotation}} for a cfg name."""
++def build_annotation_map(modules, cfg_name):
++    """Build an annotation map for a cfg from every module using the extension."""
+     annotations = {}
+-    for annotation in mod.tags.annotation:
+-        if cfg_name not in (annotation.repositories or [cfg_name]):
+-            continue
++    for mod in modules:
++        for annotation in mod.tags.annotation:
++            if cfg_name not in (annotation.repositories or [cfg_name]):
++                continue
+ 
+-        version_key = annotation.version or "*"
+-        crate_map = annotations.setdefault(annotation.crate, {})
+-        if version_key in crate_map:
+-            fail("Duplicate crate.annotation for %s version %s in repo %s" % (annotation.crate, version_key, cfg_name))
+-        crate_map[version_key] = annotation
++            version_key = annotation.version or "*"
++            crate_map = annotations.setdefault(annotation.crate, {})
++            if version_key in crate_map:
++                fail("Duplicate crate.annotation for %s version %s in repo %s" % (annotation.crate, version_key, cfg_name))
++            crate_map[version_key] = annotation
+     return annotations
+ 
+ def well_known_annotation_snippet_paths(mctx):
+diff --git a/rs/private/annotations_test.bzl b/rs/private/annotations_test.bzl
+new file mode 100644
+index 0000000..b86c0da
+--- /dev/null
++++ b/rs/private/annotations_test.bzl
+@@ -0,0 +1,54 @@
++load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
++load(":annotations.bzl", "build_annotation_map")
++
++def _annotation(crate, version, repositories = []):
++    return struct(
++        crate = crate,
++        repositories = repositories,
++        version = version,
++    )
++
++def _module(annotations):
++    return struct(tags = struct(annotation = annotations))
++
++def _annotations_from_multiple_modules_test_impl(ctx):
++    env = unittest.begin(ctx)
++    esp_config = _annotation("esp-config", "0.7.0", ["crates"])
++    esp_metadata = _annotation("esp-metadata-generated", "0.4.0", ["crates"])
++
++    annotations = build_annotation_map(
++        [
++            _module([esp_config]),
++            _module([esp_metadata]),
++        ],
++        "crates",
++    )
++
++    asserts.equals(env, esp_config, annotations["esp-config"]["0.7.0"])
++    asserts.equals(env, esp_metadata, annotations["esp-metadata-generated"]["0.4.0"])
++    return unittest.end(env)
++
++annotations_from_multiple_modules_test = unittest.make(_annotations_from_multiple_modules_test_impl)
++
++def _annotations_are_scoped_to_repository_test_impl(ctx):
++    env = unittest.begin(ctx)
++    default_repo = _annotation("default-repo", "")
++    named_repo = _annotation("named-repo", "1.0.0", ["other"])
++
++    annotations = build_annotation_map(
++        [_module([default_repo, named_repo])],
++        "crates",
++    )
++
++    asserts.equals(env, default_repo, annotations["default-repo"]["*"])
++    asserts.false(env, "named-repo" in annotations)
++    return unittest.end(env)
++
++annotations_are_scoped_to_repository_test = unittest.make(_annotations_are_scoped_to_repository_test_impl)
++
++def annotations_tests():
++    return unittest.suite(
++        "annotations_tests",
++        annotations_from_multiple_modules_test,
++        annotations_are_scoped_to_repository_test,
++    )
+-- 
+2.50.0
+
