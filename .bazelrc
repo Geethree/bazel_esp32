@@ -4,4 +4,10 @@ common --repo_env=BAZEL_NO_APPLE_CPP_TOOLCHAIN=1
 build:esp32c6 --platforms=@rules_esp32//platforms:esp32c6
 build:esp32c6 --compilation_mode=opt
 
+build --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
+build --output_groups=+clippy_checks
+
+build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
+build --output_groups=+rustfmt_checks
+
 try-import %workspace%/bazelrc.user
