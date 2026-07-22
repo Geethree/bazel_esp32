@@ -1,0 +1,6 @@
+package(default_visibility = ["//bazel/rules/hil:__subpackages__"])
+
+exports_files([
+    "hil_test.bzl",
+    "transitions.bzl",
+])

@@ -1,0 +1,35 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "workspace": {
+          "discoverConfig": {
+            "command": [
+              "bazel",
+              "run",
+              "@rules_rs//tools/rust_analyzer:discover_bazel_rust_project",
+              "--",
+              "--bazel_arg=--config=esp32c6",
+              "{arg}"
+            ],
+            "progressLabel": "rules_rs",
+            "filesToWatch": [
+              "BUILD",
+              "BUILD.bazel",
+              "MODULE.bazel",
+              "WORKSPACE",
+              "WORKSPACE.bazel"
+            ]
+          }
+        },
+        "checkOnSave": false
+      }
+    }
+  },
+  "languages": {
+    "Rust": {
+      "formatter": "language_server",
+      "format_on_save": "on"
+    }
+  }
+}

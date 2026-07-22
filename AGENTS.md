@@ -12,6 +12,10 @@ The currently supported target is ESP32-C6 (`riscv32imac-unknown-none-elf`). Fir
 - `bazel/modules/esp32/`: the in-repository `rules_esp32` module. It owns board platforms, toolchain policy, flashing, pinned host tools, crate adaptations, and `rules_rs` patches.
 - `bazel/rules/rust/`: workspace-level Rust maintenance rules.
 - `bazel/platforms/`: host platform registration.
+- `bazel/rules/hil/`: generic multi-platform HIL test orchestration.
+- `crates/hil-testing/`: reusable `no_std` framing and opt-in host HIL sessions.
+- `crates/serial-transport/`: shared host serial discovery and reconnect logic.
+- `firmware/hil/`: concrete manual hardware test suites.
 - `MODULE.bazel`: root Bzlmod dependencies, Cargo resolution, extensions, and toolchain registration.
 - `.bazelrc`: shared Bazel configuration. Put workstation-specific settings in the ignored `.bazelrc.user`.
 
@@ -26,7 +30,7 @@ Run commands from the repository root.
 bazel build //...
 
 # Compile the firmware for the ESP32-C6 platform.
-bazel build --config=esp32c6 //firmware:hello
+bazel build --config=esp32c6 //firmware:firmware
 
 # Build the host-side flash launcher and transitioned firmware without touching hardware.
 bazel build //firmware:flash
@@ -46,10 +50,10 @@ For module, toolchain, patch, crate, Rust-version, or board-configuration change
 bazel mod tidy
 bazel query '@rules_esp32//... + @espflash//:espflash'
 bazel build //...
-bazel build --config=esp32c6 //firmware:hello
+bazel build --config=esp32c6 //firmware:firmware
 bazel build //firmware:flash
 bash -n bazel-bin/firmware/flash
-file bazel-bin/firmware/hello
+file bazel-bin/firmware/firmware
 ```
 
 Report any check that could not run, including whether the reason was missing hardware, unavailable USB access, host incompatibility, or dependency/network access.
@@ -99,6 +103,7 @@ Report any check that could not run, including whether the reason was missing ha
 - Compilation and launcher generation are non-hardware operations; flashing, erasing, resetting, and monitoring interact with a physical device.
 - Never flash, erase, change fuses, modify boot configuration, or select an attached serial device without explicit user authorization.
 - Never add workstation-specific ports, USB identifiers, credentials, Wi-Fi secrets, MAC addresses, or other device-specific values to tracked files. Use environment variables or ignored local configuration.
+- Run physical HIL tests only when explicitly requested. Individual tests use `//firmware/hil/<suite>:test`; `//firmware/hil:tests` runs the full explicitly enumerated hardware suite.
 - Treat eFuse writes and security settings as irreversible. Do not add or execute such operations unless the user clearly requests the exact change and the target device has been confirmed.
 - Prefer bounded waits and timeouts in firmware. Busy loops are acceptable only when deliberate; explain timing, watchdog, power, and CPU-use implications when introducing one.
 - When modifying clocks, interrupts, unsafe register access, linker scripts, memory maps, or boot metadata, document the hardware assumption and validate against the precise chip and revision in scope.

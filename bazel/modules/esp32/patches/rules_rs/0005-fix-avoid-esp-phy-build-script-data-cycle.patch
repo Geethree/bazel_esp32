@@ -1,0 +1,31 @@
+From 5ee2e74be955712f44b55a0ed4c13f3f5d488f33 Mon Sep 17 00:00:00 2001
+From: Gerald Spencer <contact@geraldhspencer.com>
+Date: Sat, 18 Jul 2026 13:00:00 -0400
+Subject: [PATCH] fix: avoid esp-phy build-script data cycle
+
+The published esp-phy package contains an empty file named `esp-phy`. The
+generated library target has the same name, so including that file through a
+label glob resolves to the target itself and creates a dependency cycle.
+
+Exclude only the colliding empty file. The build script's actual data inputs,
+including esp_config.yml and phy_provides.x, remain available.
+---
+ rs/rust_crate.bzl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rs/rust_crate.bzl b/rs/rust_crate.bzl
+index be60c32..790ccba 100644
+--- a/rs/rust_crate.bzl
++++ b/rs/rust_crate.bzl
+@@ -55,7 +55,7 @@ def rust_crate(
+             "Cargo.toml.orig",
+             "WORKSPACE",
+             "WORKSPACE.bazel",
+-        ],
++        ] + (["esp-phy"] if name == "esp-phy" else []),
+         allow_empty = True,
+     ) + extra_compile_data
+ 
+-- 
+2.50.0
+

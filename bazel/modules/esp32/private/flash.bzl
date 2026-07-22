@@ -18,7 +18,15 @@ def _esp32_flash_impl(ctx):
     launcher = ctx.actions.declare_file(ctx.label.name)
     firmware = ctx.executable.firmware
     espflash = ctx.file.espflash
+    partition_table = ctx.file.partition_table
     monitor_arg = "args+=(--monitor)" if ctx.attr.monitor else ""
+    partition_table_arg = ""
+    partition_table_runfile = []
+    if partition_table:
+        partition_table_arg = "args+=(--partition-table \"${{runfiles_dir}}/{}\")".format(
+            _runfiles_path(partition_table, ctx.workspace_name),
+        )
+        partition_table_runfile = [partition_table]
 
     ctx.actions.write(
         output = launcher,
@@ -32,6 +40,7 @@ default_port={port}
 port="${{ESPFLASH_PORT:-${{default_port}}}}"
 
 args=(flash --chip {chip} --baud {baud})
+{partition_table_arg}
 if [[ -n "${{port}}" ]]; then
   args+=(--port "${{port}}")
 fi
@@ -44,6 +53,7 @@ exec "${{espflash}}" "${{args[@]}}" "${{firmware}}"
             espflash = _runfiles_path(espflash, ctx.workspace_name),
             firmware = _runfiles_path(firmware, ctx.workspace_name),
             monitor_arg = monitor_arg,
+            partition_table_arg = partition_table_arg,
             port = _shell_quote(ctx.attr.port),
         ),
         is_executable = True,
@@ -51,7 +61,7 @@ exec "${{espflash}}" "${{args[@]}}" "${{firmware}}"
 
     return [DefaultInfo(
         executable = launcher,
-        runfiles = ctx.runfiles(files = [espflash, firmware]),
+        runfiles = ctx.runfiles(files = [espflash, firmware] + partition_table_runfile),
     )]
 
 _esp32_flash = rule(
@@ -71,6 +81,7 @@ _esp32_flash = rule(
             mandatory = True,
         ),
         "monitor": attr.bool(default = True),
+        "partition_table": attr.label(allow_single_file = [".csv"]),
         "platform": attr.label(mandatory = True),
         "port": attr.string(),
         "_allowlist_function_transition": attr.label(

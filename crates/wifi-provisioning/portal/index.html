@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#f7f6f2">
+    <title>Connect your device to Wi-Fi</title>
+    <!-- PORTAL_STYLES -->
+  </head>
+  <body>
+    <main class="setup-shell" id="content">
+      <header class="site-header">
+        <div class="brand" aria-label="ESP32-C6">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>ESP32-C6</span>
+        </div>
+        <p class="status-chip"><span></span> Setup mode</p>
+      </header>
+
+      <section class="setup-card" aria-labelledby="setup-title">
+        <header class="intro">
+          <p class="eyebrow">Device setup</p>
+          <h1 id="setup-title">Connect to Wi-Fi</h1>
+          <p class="lede">Choose the network this device should use.</p>
+        </header>
+
+        <form id="wifi-form" novalidate>
+          <div class="field network-field">
+            <div class="field-heading">
+              <label for="network">Wi-Fi network</label>
+              <button class="text-button" id="refresh" type="button">
+                <span class="refresh-icon" aria-hidden="true"></span> Scan again
+              </button>
+            </div>
+            <div class="control select-control">
+              <span class="wifi-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+              <select id="network" name="network" aria-describedby="network-detail" disabled>
+                <option>Looking for networks&hellip;</option>
+              </select>
+              <span class="chevron" aria-hidden="true"></span>
+            </div>
+            <p class="field-detail" id="network-detail" aria-live="polite">Scanning nearby Wi-Fi&hellip;</p>
+          </div>
+
+          <div class="field manual-field" id="manual-field" hidden>
+            <label for="ssid">Network name</label>
+            <div class="control">
+              <span class="input-icon hash-icon" aria-hidden="true">#</span>
+              <input id="ssid" name="ssid" maxlength="32" autocomplete="off" placeholder="Enter the SSID">
+            </div>
+          </div>
+
+          <div class="field" id="password-field">
+            <label for="password">Password</label>
+            <div class="control">
+              <span class="input-icon lock-icon" aria-hidden="true"></span>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                maxlength="63"
+                autocomplete="current-password"
+                placeholder="Enter network password"
+              >
+              <button class="reveal" id="reveal" type="button" aria-label="Show password">
+                <span aria-hidden="true"></span>
+              </button>
+            </div>
+            <p class="field-detail" id="password-detail">Use at least 8 characters for secured networks.</p>
+          </div>
+
+          <div class="notice" id="notice" role="status" aria-live="polite" hidden>
+            <span class="notice-icon" aria-hidden="true"></span>
+            <div><strong id="notice-title"></strong><p id="notice-copy"></p></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary" id="submit" type="submit">
+              <span class="button-label">Connect device</span>
+              <span class="button-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+          <p class="privacy"><span aria-hidden="true">i</span> Credentials are sent directly to this device and stored only after it connects.</p>
+        </form>
+      </section>
+    </main>
+    <!-- PORTAL_SCRIPT -->
+  </body>
+</html>

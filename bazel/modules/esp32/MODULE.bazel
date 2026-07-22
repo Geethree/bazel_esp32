@@ -36,3 +36,17 @@ crate.annotation(
     repositories = ["crates"],
     version = "0.4.0",
 )
+crate.annotation(
+    additive_build_file = "//crates:log-0.4.27.BUILD.bazel",
+    crate = "log",
+    override_target_lib = "log-contextual",
+    repositories = ["crates"],
+    version = "0.4.27",
+)
+crate.annotation(
+    additive_build_file = "//crates:portable-atomic-1.14.0.BUILD.bazel",
+    crate = "portable-atomic",
+    override_target_lib = "portable-atomic-contextual",
+    repositories = ["crates"],
+    version = "1.14.0",
+)

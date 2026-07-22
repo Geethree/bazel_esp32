@@ -1,0 +1,25 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+
+_ALIASES = dict(aliases())
+_ALIASES.update({
+    "//crates/hil-testing": "hil_testing",
+    "//crates/wifi-provisioning:wifi_provisioning_hil": "wifi_provisioning",
+})
+
+rust_binary(
+    name = "firmware",
+    srcs = ["src/main.rs"],
+    aliases = _ALIASES,
+    crate_name = "provisioning_hil_device",
+    edition = "2024",
+    target_compatible_with = select({
+        "@rules_esp32//platforms:is_esp32c6": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//firmware/hil/provisioning:__pkg__"],
+    deps = all_crate_deps(normal = True, cargo_only = True) + [
+        "//crates/hil-testing",
+        "//crates/wifi-provisioning:wifi_provisioning_hil",
+    ],
+)

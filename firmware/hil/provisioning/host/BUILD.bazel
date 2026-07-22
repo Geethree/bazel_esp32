@@ -1,0 +1,28 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+
+_ALIASES = dict(aliases())
+_ALIASES.update({
+    "//crates/hil-testing:hil_testing_host": "hil_testing",
+    "//crates/wifi-provisioning:wifi_provisioning_hil": "wifi_provisioning",
+})
+
+rust_binary(
+    name = "host",
+    srcs = ["src/main.rs"],
+    aliases = _ALIASES,
+    crate_name = "provisioning_hil_host",
+    edition = "2024",
+    visibility = ["//firmware/hil/provisioning:__pkg__"],
+    deps = all_crate_deps(normal = True, cargo_only = True) + [
+        "//crates/hil-testing:hil_testing_host",
+        "//crates/serial-transport",
+        "//crates/wifi-provisioning:wifi_provisioning_hil",
+    ],
+)
+
+rust_test(
+    name = "unit_tests",
+    crate = ":host",
+)

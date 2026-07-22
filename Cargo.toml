@@ -1,3 +1,12 @@
 [workspace]
-members = ["firmware"]
+members = [
+    "crates/hil-testing",
+    "crates/serial-transport",
+    "crates/wifi-provisioning",
+    "firmware",
+    "firmware/hil/provisioning/device",
+    "firmware/hil/provisioning/host",
+    "bazel/rules/hil",
+    "crates/serial-console",
+]
 resolver = "3"

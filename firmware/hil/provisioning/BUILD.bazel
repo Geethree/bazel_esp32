@@ -1,0 +1,29 @@
+load("//bazel/rules/hil:defs.bzl", "hil_test")
+
+hil_test(
+    name = "test",
+    args = [
+        "--espflash",
+        "{espflash}",
+        "--firmware",
+        "{firmware}",
+        "--partition-table",
+        "{partition_table}",
+        "--chip",
+        "esp32c6",
+        "--wifi-offset",
+        "0x3f0000",
+        "--wifi-size",
+        "0x2000",
+    ],
+    data = {"//firmware:partitions.csv": "partition_table"},
+    env_inherit = [
+        "HIL_WIFI_PASSWORD",
+        "HIL_WIFI_SSID",
+    ],
+    firmware = "//firmware/hil/provisioning/device:firmware",
+    firmware_platform = "@rules_esp32//platforms:esp32c6",
+    host = "//firmware/hil/provisioning/host:host",
+    host_tools = {"@espflash//:espflash": "espflash"},
+    runner_platform = "@platforms//host:host",
+)

@@ -1,0 +1,21 @@
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+
+rust_binary(
+    name = "launcher",
+    srcs = ["src/main.rs"],
+    crate_name = "hil_launcher",
+    edition = "2024",
+    visibility = ["//bazel/rules/hil/private:__pkg__"],
+    deps = ["@crates//:runfiles"],
+)
+
+rust_test(
+    name = "launcher_unit_tests",
+    crate = ":launcher",
+)
+
+exports_files([
+    "README.md",
+    "defs.bzl",
+])

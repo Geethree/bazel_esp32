@@ -1,0 +1,52 @@
+# Added to the generated portable-atomic 1.14.0 crate repository.
+#
+# ESP32-C6 requires `unsafe-assume-single-core`, but that target-only feature
+# is rejected when rules_rs unifies it into host build tools.
+
+rust_crate(
+    name = "portable-atomic-host",
+    crate_name = "portable_atomic",
+    purl = "pkg:cargo/portable-atomic@1.14.0",
+    version = "1.14.0",
+    aliases = {},
+    deps = [],
+    data = [],
+    crate_features = [
+        "default",
+        "fallback",
+        "require-cas",
+    ],
+    triples = [
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
+    conditional_crate_features = {},
+    crate_root = "src/lib.rs",
+    edition = "2018",
+    rustc_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    rustc_flags = [],
+    tags = [],
+    target_compatible_with = RESOLVED_PLATFORMS,
+    links = None,
+    build_script = False,
+    build_script_data = [],
+    build_deps = [],
+    build_script_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    allow_build_script_to_detect_nonhermetic_paths = False,
+    build_script_toolchains = [],
+    build_script_tools = [],
+    build_script_tags = [],
+    is_proc_macro = False,
+    has_lib = True,
+    binaries = {},
+    use_legacy_rules_rust_platforms = False,
+)
+
+alias(
+    name = "portable-atomic-contextual",
+    actual = select({
+        "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": ":portable-atomic",
+        "//conditions:default": ":portable-atomic-host",
+    }),
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,31 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+
+rust_library(
+    name = "hil-testing",
+    srcs = glob(["src/**/*.rs"]),
+    aliases = aliases(),
+    crate_name = "hil_testing",
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(normal = True, cargo_only = True),
+)
+
+rust_library(
+    name = "hil_testing_host",
+    srcs = glob(["src/**/*.rs"]),
+    aliases = aliases(),
+    crate_features = ["host"],
+    crate_name = "hil_testing",
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(normal = True, cargo_only = True) + ["//crates/serial-transport"],
+)
+
+rust_test(
+    name = "unit_tests",
+    crate = ":hil_testing_host",
+)
+
+exports_files(["README.md"])

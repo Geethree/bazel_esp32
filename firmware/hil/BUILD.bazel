@@ -1,0 +1,9 @@
+test_suite(
+    name = "tests",
+    tests = ["//firmware/hil/provisioning:test"],
+    tags = [
+        "exclusive",
+        "local",
+        "manual",
+    ],
+)

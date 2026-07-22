@@ -1,0 +1,24 @@
+[package]
+name = "provisioning-hil-device"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+critical-section = "1.2.0"
+embassy-executor = "0.10.0"
+embassy-futures = "0.1.2"
+embassy-net = { version = "0.8.0", features = ["dhcpv4", "medium-ethernet", "tcp"] }
+embassy-time = "0.5.0"
+embedded-io-async = "0.7.0"
+esp-alloc = "0.10.0"
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32c6"] }
+esp-hal = { version = "~1.1.0", features = ["esp32c6", "unstable"] }
+esp-println = { version = "0.17.0", default-features = false, features = ["esp32c6", "jtag-serial", "log-04"] }
+esp-radio = { version = "0.18.0", features = ["esp32c6", "log-04", "wifi"] }
+esp-rtos = { version = "0.3.0", features = ["embassy", "esp-radio", "esp32c6", "log-04"] }
+esp-storage = { version = "0.9.0", features = ["esp32c6"] }
+heapless = "0.8.0"
+hil-testing = { path = "../../../../crates/hil-testing" }
+static_cell = "2.1.0"
+wifi-provisioning = { path = "../../../../crates/wifi-provisioning", features = ["device", "hil"] }

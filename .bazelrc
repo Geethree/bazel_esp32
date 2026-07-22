@@ -1,5 +1,8 @@
 common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 common --repo_env=BAZEL_NO_APPLE_CPP_TOOLCHAIN=1
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-all
+
+common --extra_execution_platforms=@bazel_tools//tools:host_platform
 
 build:esp32c6 --platforms=@rules_esp32//platforms:esp32c6
 build:esp32c6 --compilation_mode=opt
@@ -10,4 +13,11 @@ build --output_groups=+clippy_checks
 build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
 build --output_groups=+rustfmt_checks
 
-try-import %workspace%/bazelrc.user
+test --test_output=errors
+
+# Control the parallelism of "slots" that hil tests can do at once locally
+test --local_resources=esp32_slots=1
+test --test_tag_filters=-hil
+test:hil --test_tag_filters=
+
+try-import %workspace%/.bazelrc.user

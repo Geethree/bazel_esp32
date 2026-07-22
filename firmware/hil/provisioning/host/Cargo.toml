@@ -1,0 +1,10 @@
+[package]
+name = "provisioning-hil-host"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+hil-testing = { path = "../../../../crates/hil-testing", features = ["host"] }
+serial-transport = { path = "../../../../crates/serial-transport" }
+wifi-provisioning = { path = "../../../../crates/wifi-provisioning", features = ["hil"] }

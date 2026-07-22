@@ -1,6 +1,6 @@
 # rules_rs ESP32-C6 patches
 
-This directory carries four ordered, pinned patches for
+This directory carries five ordered, pinned patches for
 [`rules_rs`](https://github.com/hermeticbuild/rules_rs) so its hermetic Rust
 toolchains can target the ESP32-C6.
 
@@ -12,6 +12,7 @@ toolchains can target the ESP32-C6.
 - Patch 2 commit: `b58037d` (`feat: allow overriding generated crate library targets`)
 - Patch 3 commit: `2f110e1` (`fix: normalize RISC-V target arch in Cargo cfgs`)
 - Patch 4 commit: `4f2f46c` (`feat: allow dependency modules to annotate crate repositories`)
+- Patch 5: `fix: avoid esp-phy build-script data cycle`
 
 The patches were authored as separate commits against that release, then
 exported with `git format-patch`. The root module includes
@@ -82,6 +83,17 @@ filtering.
 
 Patch 4 is a separate commit on top of patches 1 through 3.
 
+## What patch 5 fixes
+
+The published `esp-phy` 0.2.0 package contains an empty file named `esp-phy`.
+The generated Bazel library target has that same name. `rules_rs` otherwise
+includes the package file in the build script's compile-data glob, where the
+label resolves to the library target and creates a dependency cycle.
+
+Patch 5 excludes only that colliding empty file for `esp-phy`. The build
+script's actual inputs, including `esp_config.yml` and `phy_provides.x`, remain
+in its compile data.
+
 ## Reproduce and validate
 
 From a rules_rs checkout:
@@ -105,7 +117,7 @@ this from the workspace root and replace `<rules_rs-checkout>` with the source
 checkout:
 
 ```sh
-git -C <rules_rs-checkout> format-patch -4 \
+git -C <rules_rs-checkout> format-patch -5 \
   --output-directory "$PWD/bazel/modules/esp32/patches/rules_rs"
 ```
 
