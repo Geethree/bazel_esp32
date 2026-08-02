@@ -225,8 +225,8 @@
     "https://bcr.bazel.build/modules/rules_python/1.6.3/MODULE.bazel": "a7b80c42cb3de5ee2a5fa1abc119684593704fcd2fec83165ebe615dec76574f",
     "https://bcr.bazel.build/modules/rules_python/1.7.0/MODULE.bazel": "d01f995ecd137abf30238ad9ce97f8fc3ac57289c8b24bd0bf53324d937a14f8",
     "https://bcr.bazel.build/modules/rules_python/1.7.0/source.json": "028a084b65dcf8f4dc4f82f8778dbe65df133f234b316828a82e060d81bdce32",
-    "https://bcr.bazel.build/modules/rules_rs/0.0.96/MODULE.bazel": "678fdcee5a9847611276770eab47190dda04a41973b7bf6037e50a3f98e49e09",
-    "https://bcr.bazel.build/modules/rules_rs/0.0.96/source.json": "2b52d3d209324bd4aaa4896aa0e8b28d0123856b4ade32ebd7bf24b4fded6f12",
+    "https://bcr.bazel.build/modules/rules_rs/0.0.98/MODULE.bazel": "f9fd17e0330506efb3c1bf9aa9352fc81013e6d9af9521ccd5a5b3ce3bb81ffa",
+    "https://bcr.bazel.build/modules/rules_rs/0.0.98/source.json": "f8e639ec93ce46084d52466cec576bb67bdbedf42274ed88ca5993078d92fe7a",
     "https://bcr.bazel.build/modules/rules_shell/0.2.0/MODULE.bazel": "fda8a652ab3c7d8fee214de05e7a9916d8b28082234e8d2c0094505c5268ed3c",
     "https://bcr.bazel.build/modules/rules_shell/0.3.0/MODULE.bazel": "de4402cd12f4cc8fda2354fce179fdb068c0b9ca1ec2d2b17b3e21b24c1a937b",
     "https://bcr.bazel.build/modules/rules_shell/0.4.1/MODULE.bazel": "00e501db01bbf4e3e1dd1595959092c2fadf2087b2852d3f553b5370f5633592",
@@ -370,7 +370,7 @@
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
         "bzlTransitiveDigest": "4w9RM0xjdKo1crk5zL20a/TuhqO0P1z1LsuXDneBXD4=",
-        "usagesDigest": "EmZHTr5yk4AVK89DaY//dDXwJSgPzIUmFc2roemvNtM=",
+        "usagesDigest": "2uUhyJ36Qq4a1rUzvvs13oJm/LwRYMUcofJH2UOl3pk=",
         "recordedInputs": [
           "REPO_MAPPING:aspect_tools_telemetry+,bazel_lib bazel_lib+",
           "REPO_MAPPING:aspect_tools_telemetry+,bazel_skylib bazel_skylib+",
@@ -381,12 +381,12 @@
             "repoRuleId": "@@aspect_tools_telemetry+//:extension.bzl%tel_repository",
             "attributes": {
               "deps": {
-                "rules_rs": "0.0.96",
                 "aspect_rules_esbuild": "0.26.0",
                 "aspect_rules_js": "3.2.3",
+                "rules_rs": "0.0.98",
                 "aspect_tools_telemetry": "0.4.2"
               },
-              "last_notice": 0
+              "last_notice": 1
             }
           }
         },

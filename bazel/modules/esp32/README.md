@@ -14,7 +14,7 @@ than a board-specific Rust rule.
 | Component | Supported version |
 | --- | --- |
 | Bazel | 9.x |
-| rules_rs | 0.0.96 plus the module's four ordered patches |
+| rules_rs | 0.0.98 plus the module's four ordered patches |
 | Rust | 1.96.1, edition 2024 |
 | Target | `riscv32imac-unknown-none-elf` |
 | Board/chip | ESP32-C6 |
@@ -149,11 +149,14 @@ No new Rust rule is required. Firmware targets opt into the new board through
 The four ordered patches under `patches/rules_rs` are part of this module's
 pinned dependency contract:
 
-1. Add the RV32IMAC bare-metal target and hermetic `rust-lld` selection.
-2. Add `crate.annotation(override_target_lib = ...)`.
-3. Normalize RISC-V ISA triple names to Rust `cfg(target_arch)` values.
-4. Merge crate annotations contributed by dependency modules into named Cargo
+1. Add `crate.annotation(override_target_lib = ...)`.
+2. Normalize RISC-V ISA triple names to Rust `cfg(target_arch)` values.
+3. Merge crate annotations contributed by dependency modules into named Cargo
    repositories.
+4. Avoid an `esp-phy` build-script data cycle.
+
+RV32IMAC target support and hermetic `rust-lld` selection are provided directly
+by rules_rs 0.0.98.
 
 Removing or reordering a patch, changing rules_rs, or changing an adapted crate
 version must fail validation before it is accepted.

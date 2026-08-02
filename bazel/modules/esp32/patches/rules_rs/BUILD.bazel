@@ -1,5 +1,4 @@
 exports_files([
-    "0001-feat-support-bare-metal-RV32IMAC-Rust-targets.patch",
     "0002-feat-allow-overriding-generated-crate-library-target.patch",
     "0003-fix-normalize-RISC-V-target-arch-in-Cargo-cfgs.patch",
     "0004-feat-allow-dependency-modules-to-annotate-crate-repo.patch",

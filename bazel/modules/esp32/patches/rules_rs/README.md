@@ -1,49 +1,27 @@
 # rules_rs ESP32-C6 patches
 
-This directory carries five ordered, pinned patches for
+This directory carries four ordered, pinned patches for
 [`rules_rs`](https://github.com/hermeticbuild/rules_rs) so its hermetic Rust
 toolchains can target the ESP32-C6.
 
 ## Provenance
 
-- rules_rs release: `v0.0.96`
-- Release base commit: `87811fbf13177eff8f118a808610fe3a4fd0eed7`
-- Patch 1 commit: `c5ebcf0` (`feat: support bare-metal RV32IMAC Rust targets`)
+- rules_rs release: `v0.0.98`
+- Release base commit: `68d13bf398efb349092e86b714646f8fcdd12f9c`
 - Patch 2 commit: `b58037d` (`feat: allow overriding generated crate library targets`)
 - Patch 3 commit: `2f110e1` (`fix: normalize RISC-V target arch in Cargo cfgs`)
 - Patch 4 commit: `4f2f46c` (`feat: allow dependency modules to annotate crate repositories`)
 - Patch 5: `fix: avoid esp-phy build-script data cycle`
 
-The patches were authored as separate commits against that release, then
-exported with `git format-patch`. The root module includes
+Patches 2 through 4 retain their commit provenance from the series originally
+authored against v0.0.96; patch 5 was added locally. All four apply cleanly to
+v0.0.98. The root module includes
 `//bazel/modules/esp32:rules_rs_override.MODULE.bazel`, which applies them to
 the released BCR module with `single_version_override`.
 
-## What patch 1 adds
-
-The ESP32-C6 uses the stable Rust target
-`riscv32imac-unknown-none-elf`. The patch:
-
-1. Enables that target in the rules_rs supported-target matrix.
-2. Adds an RV32 ISA constraint so RV32IMAC and the existing RV32IMC target do
-   not collapse to the same Bazel `riscv32`/`none` constraint set.
-3. Selects the Rust distribution's hermetic `rust-lld` for both bare-metal
-   RV32 targets. With no target C toolchain present, rules_rust uses that
-   linker directly for pure-Rust firmware.
-
-The module platform `@rules_esp32//platforms:esp32c6` inherits the patched target
-platform. `//firmware:hello` exercises the complete target: `no_std`
-compilation, esp-hal runtime and linker scripts, boot image metadata, and
-hermetic `rust-lld` linking.
-
-The target platform is independent from the execution platform. The local
-`rbe` config chooses a Linux remote execution platform but does not set
-`--platforms`; passing `--config=esp32c6` chooses the ESP32-C6 target. Use
-`--config=linux_x86_64_gnu` when a build should instead target Linux.
-
 ## What patch 2 adds
 
-rules_rs v0.0.96 generates one library target per Cargo package. That is not
+rules_rs v0.0.98 generates one library target per Cargo package. That is not
 enough for `esp-config`: host build scripts need its `build` feature and `std`,
 while ESP32-C6 target libraries need the same package without that feature and
 as `no_std`. `esp-metadata-generated` has the same host/target split around its
@@ -55,8 +33,7 @@ the crate repository. The ESP-specific additive target and platform `select`
 remain in `@rules_esp32//crates`; host dependencies keep the generated targets and
 RV32IMAC dependencies receive their no_std variants.
 
-Patch 2 is deliberately a separate patch on top of patch 1. It does not amend
-or replace the target/toolchain change.
+RV32IMAC target and toolchain support are provided directly by rules_rs.
 
 ## What patch 3 fixes
 
@@ -67,7 +44,7 @@ components to Rust's corresponding `target_arch` values. Without that
 normalization, rules_rs drops RISC-V-only dependencies such as `riscv` from
 generated targets.
 
-Patch 3 is also a separate commit on top of patches 1 and 2.
+Patch 3 is a separate commit on top of patch 2.
 
 ## What patch 4 adds
 
@@ -81,7 +58,7 @@ Annotations remain explicitly repository-scoped and duplicate crate/version
 annotations still fail. Unit tests cover cross-module merging and repository
 filtering.
 
-Patch 4 is a separate commit on top of patches 1 through 3.
+Patch 4 is a separate commit on top of patches 2 and 3.
 
 ## What patch 5 fixes
 
@@ -101,12 +78,11 @@ From a rules_rs checkout:
 ```sh
 git switch esp32c6-riscv32imac
 bazel test //rs/private:annotations_tests //rs/private:cfg_parser_tests
-cd test && bazel test //:target_triple_constraints_test
 ```
 
-The test passed against `v0.0.96` with Rust `1.96.1`. It checks that every
-supported target triple, including RV32IMAC, resolves to a distinct generated
-platform/toolchain constraint set.
+The annotation and cfg-parser tests pass against the patched v0.0.98 source.
+The workspace validation matrix passes with Rust `1.96.1`, including direct
+ESP32-C6 firmware compilation and transitioned flash-launcher generation.
 
 The workspace firmware target also builds successfully. The downloaded output
 identifies as a statically linked, 32-bit little-endian RISC-V ELF with RVC and
@@ -117,7 +93,7 @@ this from the workspace root and replace `<rules_rs-checkout>` with the source
 checkout:
 
 ```sh
-git -C <rules_rs-checkout> format-patch -5 \
+git -C <rules_rs-checkout> format-patch -4 \
   --output-directory "$PWD/bazel/modules/esp32/patches/rules_rs"
 ```
 
