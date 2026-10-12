@@ -7,13 +7,19 @@ constraint_value(
     constraint_setting = ":chip",
 )
 
-config_setting(
-    name = "is_esp32c6",
-    constraint_values = [":chip_esp32c6"],
+constraint_value(
+    name = "chip_esp32s31",
+    constraint_setting = ":chip",
 )
 
 platform(
     name = "esp32c6",
     constraint_values = [":chip_esp32c6"],
     parents = ["@rules_rs//rs/platforms:riscv32imac-unknown-none-elf"],
+)
+
+platform(
+    name = "esp32s31",
+    constraint_values = [":chip_esp32s31"],
+    parents = ["@rules_rs//rs/platforms:riscv32imafc-unknown-none-elf"],
 )

@@ -1,6 +1,6 @@
 # rules_rs ESP32-C6 patches
 
-This directory carries four ordered, pinned patches for
+This directory carries five ordered, pinned patches for
 [`rules_rs`](https://github.com/hermeticbuild/rules_rs) so its hermetic Rust
 toolchains can target the ESP32-C6.
 
@@ -9,15 +9,16 @@ toolchains can target the ESP32-C6.
 - rules_rs release: `v0.0.98`
 - Release base commit: `68d13bf398efb349092e86b714646f8fcdd12f9c`
 - Patch 2 commit: `b58037d` (`feat: allow overriding generated crate library targets`)
-- Patch 3 commit: `2f110e1` (`fix: normalize RISC-V target arch in Cargo cfgs`)
+- Patch 3 commit: `476eafe` (`fix: normalize RISC-V target arch in Cargo cfgs`)
 - Patch 4 commit: `4f2f46c` (`feat: allow dependency modules to annotate crate repositories`)
 - Patch 5: `fix: avoid esp-phy build-script data cycle`
+- Patch 6: add the RV32IMAFC target and linker for ESP32-S31
 
-Patches 2 through 4 retain their commit provenance from the series originally
-authored against v0.0.96; patch 5 was added locally. All four apply cleanly to
-v0.0.98. The root module includes
-`//bazel/modules/esp32:rules_rs_override.MODULE.bazel`, which applies them to
-the released BCR module with `single_version_override`.
+Patches 2 and 4 retain their commit provenance from the series originally
+authored against v0.0.96. Patch 3 was regenerated from its standalone upstream
+commit, and patches 5 and 6 were added locally. All five apply cleanly to v0.0.98. The
+root module includes `//bazel/modules/esp32:rules_rs_override.MODULE.bazel`,
+which applies them to the released BCR module with `single_version_override`.
 
 ## What patch 2 adds
 
@@ -44,7 +45,11 @@ components to Rust's corresponding `target_arch` values. Without that
 normalization, rules_rs drops RISC-V-only dependencies such as `riscv` from
 generated targets.
 
-Patch 3 is a separate commit on top of patch 2.
+The cfg-parser tests cover both an RV32IMAC bare-metal triple and an RV64GC
+Linux musl triple, including negative assertions for the ISA-bearing names.
+
+Patch 3 is applied after patch 2 but comes from an independent standalone
+upstream commit.
 
 ## What patch 4 adds
 

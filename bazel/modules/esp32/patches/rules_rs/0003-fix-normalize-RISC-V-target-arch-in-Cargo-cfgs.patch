@@ -1,12 +1,12 @@
-From 2f110e10849de5d9cf13bde1bb6604fc24974b35 Mon Sep 17 00:00:00 2001
+From 476eafe1374413c4c67dbdba4a16eae93e4a2716 Mon Sep 17 00:00:00 2001
 From: Gerald Spencer <contact@geraldhspencer.com>
 Date: Fri, 17 Jul 2026 16:49:18 -0400
-Subject: [PATCH 3/3] fix: normalize RISC-V target arch in Cargo cfgs
+Subject: [PATCH] fix: normalize RISC-V target arch in Cargo cfgs
 
 ---
  rs/private/cfg_parser.bzl      | 11 ++++++++++-
- rs/private/cfg_parser_test.bzl | 11 +++++++++--
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ rs/private/cfg_parser_test.bzl | 22 +++++++++++++++++-----
+ 2 files changed, 27 insertions(+), 6 deletions(-)
 
 diff --git a/rs/private/cfg_parser.bzl b/rs/private/cfg_parser.bzl
 index 6d04c1f..fd5eaf8 100644
@@ -38,18 +38,26 @@ index 6d04c1f..fd5eaf8 100644
      os_raw_part = _get(parts, 2, "none")
      env_part = "-".join(parts[3:])
 diff --git a/rs/private/cfg_parser_test.bzl b/rs/private/cfg_parser_test.bzl
-index 32ab059..484f058 100644
+index 32ab059..d7e4e44 100644
 --- a/rs/private/cfg_parser_test.bzl
 +++ b/rs/private/cfg_parser_test.bzl
-@@ -14,6 +14,7 @@ def _cfg_parser_smoke_test_impl(ctx):
+@@ -1,5 +1,5 @@
+ load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
+-load(":cfg_parser.bzl", "cfg_matches", "cfg_matches_expr_for_triples", "triple_to_cfg_attrs", "cfg_matches_expr_for_cfg_attrs")
++load(":cfg_parser.bzl", "cfg_matches", "cfg_matches_expr_for_cfg_attrs", "cfg_matches_expr_for_triples", "triple_to_cfg_attrs")
+ 
+ def _cfg(expr):
+     return "cfg(%s)" % expr
+@@ -14,6 +14,8 @@ def _cfg_parser_smoke_test_impl(ctx):
      win_gnu = "x86_64-pc-windows-gnu"
      win_gnullvm = "aarch64-pc-windows-gnullvm"
      wasm = "wasm32-unknown-unknown"
 +    riscv32imac = "riscv32imac-unknown-none-elf"
++    riscv64gc = "riscv64gc-unknown-linux-musl"
  
      # MacOS facts facts
      asserts.true(env, cfg_matches(_cfg("unix"), mac))
-@@ -47,6 +48,12 @@ def _cfg_parser_smoke_test_impl(ctx):
+@@ -47,6 +49,15 @@ def _cfg_parser_smoke_test_impl(ctx):
      asserts.true(env, cfg_matches(_cfg('target_family = "wasm"'), wasm))
      asserts.true(env, cfg_matches(_cfg('target_pointer_width = "32"'), wasm))
  
@@ -58,25 +66,31 @@ index 32ab059..484f058 100644
 +    asserts.true(env, cfg_matches(_cfg('target_arch = "riscv32"'), riscv32imac))
 +    asserts.true(env, cfg_matches(_cfg('target_pointer_width = "32"'), riscv32imac))
 +    asserts.false(env, cfg_matches(_cfg('target_arch = "riscv32imac"'), riscv32imac))
++    asserts.true(env, cfg_matches(_cfg('target_arch = "riscv64"'), riscv64gc))
++    asserts.true(env, cfg_matches(_cfg('target_pointer_width = "64"'), riscv64gc))
++    asserts.false(env, cfg_matches(_cfg('target_arch = "riscv64gc"'), riscv64gc))
 +
      # Combinators
      asserts.false(env, cfg_matches(_cfg("any()"), mac))
      asserts.true(env, cfg_matches(_cfg("not(any())"), mac))
-@@ -63,7 +70,7 @@ def _cfg_parser_smoke_test_impl(ctx):
+@@ -63,15 +74,16 @@ def _cfg_parser_smoke_test_impl(ctx):
      asserts.true(env, cfg_matches(_cfg('target_feature = "sse2"'), linux_gnu))
      asserts.false(env, cfg_matches(_cfg('target_feature = "sse2"'), mac))
  
 -    triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm]
-+    triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm, riscv32imac]
++    triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm, riscv32imac, riscv64gc]
  
      results = cfg_matches_expr_for_triples(_cfg('all(unix, any(target_env = "gnu", target_env = "musl"))'), triples)
-     asserts.equals(env, results.matches, [linux_gnu, linux_musl])
-@@ -71,7 +78,7 @@ def _cfg_parser_smoke_test_impl(ctx):
+-    asserts.equals(env, results.matches, [linux_gnu, linux_musl])
++    asserts.equals(env, results.matches, [linux_gnu, linux_musl, riscv64gc])
+ 
      results = cfg_matches_expr_for_triples(
          _cfg('any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")'),
-         triples)
+-        triples)
 -    asserts.equals(env, results.matches, triples[:-1])
-+    asserts.equals(env, results.matches, triples[:-2])
++        triples,
++    )
++    asserts.equals(env, results.matches, [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm])
  
      # Cargo dependencies can target a specific triple instead of a cfg expression.
      results = cfg_matches_expr_for_triples(win_gnullvm, triples)

@@ -1,0 +1,42 @@
+load("@rules_esp32//:defs.bzl", "esp32_flash")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("//firmware/build:selection.bzl", "board", "board_compatibility", "chip_crates", "selected_chip", "selected_partitions")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "app",
+    srcs = ["src/lib.rs"],
+    crate_name = "firmware_diagnostics_app",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    tags = ["manual"],
+    deps = ["//firmware/boards/api:board_api"] + board() + chip_crates(
+        "esp-hal-1.2.2",
+        "esp-println-0.18.0",
+    ),
+)
+
+rust_binary(
+    name = "firmware",
+    srcs = ["src/main.rs"],
+    crate_name = "firmware_diagnostics",
+    edition = "2024",
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
+    deps = [":app"] + chip_crates(
+        "esp-bootloader-esp-idf-0.6.0",
+        "esp-hal-1.2.2",
+        "esp-println-0.18.0",
+    ),
+)
+
+esp32_flash(
+    name = "flash",
+    chip = selected_chip(),
+    espflash = "@espflash//:espflash",
+    firmware = ":firmware",
+    monitor = False,
+    partition_table = selected_partitions(),
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
+)

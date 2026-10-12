@@ -1,38 +1,21 @@
-load("@crates//:defs.bzl", "aliases", "all_crate_deps")
-load("@rules_esp32//:defs.bzl", "esp32_flash")
-load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+package(default_visibility = ["//visibility:public"])
 
 alias(
-    name = "console",
-    actual = "//crates/serial-console:serial-console",
+    name = "provisioning",
+    actual = "//firmware/apps/provisioning:firmware",
 )
 
 alias(
-    name = "hil_console",
-    actual = "//crates/serial-console:serial_console_hil",
+    name = "diagnostics",
+    actual = "//firmware/apps/diagnostics:firmware",
 )
 
-exports_files([
-    "Cargo.toml",
-    "partitions.csv",
-])
-
-rust_binary(
-    name = "firmware",
-    srcs = ["src/main.rs"],
-    aliases = aliases(),
-    target_compatible_with = select({
-        "@rules_esp32//platforms:is_esp32c6": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = all_crate_deps(normal = True),
+alias(
+    name = "flash_provisioning",
+    actual = "//firmware/apps/provisioning:flash",
 )
 
-esp32_flash(
-    name = "flash",
-    board = "esp32c6",
-    espflash = "@espflash//:espflash",
-    firmware = ":firmware",
-    partition_table = "partitions.csv",
-    monitor = False
+alias(
+    name = "flash_diagnostics",
+    actual = "//firmware/apps/diagnostics:flash",
 )

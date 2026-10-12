@@ -46,6 +46,7 @@ alias(
     name = "portable-atomic-contextual",
     actual = select({
         "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": ":portable-atomic",
+        "@rules_rs//rs/platforms/config:riscv32imafc-unknown-none-elf": ":portable-atomic",
         "//conditions:default": ":portable-atomic-host",
     }),
     visibility = ["//visibility:public"],

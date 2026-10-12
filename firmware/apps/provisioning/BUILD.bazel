@@ -1,0 +1,67 @@
+load("@rules_esp32//:defs.bzl", "esp32_flash")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("//firmware/build:selection.bzl", "board", "board_compatibility", "chip_crates", "selected_chip", "selected_partitions")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "app",
+    srcs = [
+        "src/console.rs",
+        "src/lib.rs",
+        "src/network.rs",
+        "src/reset.rs",
+        "src/runtime.rs",
+    ],
+    crate_name = "firmware_provisioning_app",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    tags = ["manual"],
+    deps = [
+        "//firmware/boards/api:board_api",
+    ] + board() + chip_crates(
+        "edge-dhcp-0.7.0",
+        "edge-nal-0.6.0",
+        "edge-nal-embassy-0.8.1",
+        "embassy-executor-0.10.0",
+        "embassy-futures-0.1.2",
+        "embassy-net-0.8.0",
+        "embassy-sync-0.8.0",
+        "embassy-time-0.5.1",
+        "embedded-io-async-0.7.0",
+        "esp-alloc-0.11.0",
+        "esp-hal-1.2.2",
+        "esp-println-0.18.0",
+        "esp-radio-1.0.0-beta.1",
+        "esp-rtos-0.4.0",
+        "esp-storage-0.10.0",
+        "heapless-0.8.0",
+        "static_cell-2.1.1",
+    ) + ["//firmware/services/provisioning"],
+)
+
+rust_binary(
+    name = "firmware",
+    srcs = ["src/main.rs"],
+    crate_name = "firmware_provisioning",
+    edition = "2024",
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
+    deps = [":app"] + chip_crates(
+        "embassy-executor-0.10.0",
+        "esp-bootloader-esp-idf-0.6.0",
+        "esp-hal-1.2.2",
+        "esp-println-0.18.0",
+        "esp-rtos-0.4.0",
+    ),
+)
+
+esp32_flash(
+    name = "flash",
+    chip = selected_chip(),
+    espflash = "@espflash//:espflash",
+    firmware = ":firmware",
+    monitor = False,
+    partition_table = selected_partitions(),
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
+)

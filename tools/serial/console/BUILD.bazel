@@ -1,0 +1,49 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+
+_HIL_ALIASES = dict(aliases())
+
+_HIL_ALIASES.update({"//firmware/hil/support:host": "hil_testing"})
+
+rust_binary(
+    name = "console",
+    srcs = ["src/main.rs"],
+    aliases = aliases(),
+    crate_name = "serial_console",
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(
+        cargo_only = True,
+        normal = True,
+    ) + ["//tools/serial/transport"],
+)
+
+rust_binary(
+    name = "hil",
+    srcs = ["src/main.rs"],
+    aliases = _HIL_ALIASES,
+    crate_features = ["hil"],
+    crate_name = "serial_console",
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(
+        cargo_only = True,
+        normal = True,
+    ) + [
+        "//firmware/hil/support:host",
+        "//tools/serial/transport",
+    ],
+)
+
+rust_test(
+    name = "unit_tests",
+    crate = ":console",
+)
+
+rust_test(
+    name = "hil_unit_tests",
+    crate = ":hil",
+)
+
+exports_files(["README.md"])

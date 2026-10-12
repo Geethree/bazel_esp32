@@ -1,9 +1,8 @@
 test_suite(
     name = "tests",
-    tests = ["//firmware/hil/provisioning:test"],
-    tags = [
-        "exclusive",
-        "local",
-        "manual",
+    tags = ["manual"],
+    tests = [
+        "//firmware/hil/provisioning:test_s31_function_coreboard_1",
+        "//firmware/hil/provisioning:test_xiao_esp32c6",
     ],
 )

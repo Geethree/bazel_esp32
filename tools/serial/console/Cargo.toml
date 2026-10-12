@@ -1,0 +1,13 @@
+[package]
+name = "serial-console"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[features]
+default = []
+hil = ["dep:hil-testing"]
+
+[dependencies]
+hil-testing = { path = "../../../firmware/hil/support", features = ["host"], optional = true }
+serial-transport = { path = "../transport" }

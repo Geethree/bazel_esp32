@@ -4,17 +4,21 @@
 
 This repository builds bare-metal Rust firmware for ESP32 devices with Bazel. Bazel is the authoritative build interface; use Cargo manifests to declare Rust packages and dependencies, but do not treat a successful host `cargo build` as firmware validation.
 
-The currently supported target is ESP32-C6 (`riscv32imac-unknown-none-elf`). Firmware is `no_std` and uses Rust 2024.
+The chip targets are ESP32-C6 (`riscv32imac-unknown-none-elf`) and ESP32-S31 (`riscv32imafc-unknown-none-elf`). Firmware is `no_std` and uses Rust 2024. Diagnostics and provisioning build for both chips; physical provisioning behavior requires explicit hardware verification.
 
 ## Repository Layout
 
-- `firmware/`: application manifests, Bazel targets, and firmware source.
-- `bazel/modules/esp32/`: the in-repository `rules_esp32` module. It owns board platforms, toolchain policy, flashing, pinned host tools, crate adaptations, and `rules_rs` patches.
+- `firmware/apps/`: one library, binary, and flash target per app.
+- `firmware/boards/`: physical board adapters, capability interfaces, and partition tables.
+- `firmware/chips/`: per-chip Cargo workspaces and lockfiles.
+- `firmware/build/selection.bzl`: platform-to-board and chip dependency selection.
+- `bazel/modules/esp32/`: the in-repository `rules_esp32` module. It owns chip platforms, toolchain policy, flashing, pinned host tools, crate adaptations, and `rules_rs` patches.
 - `bazel/rules/rust/`: workspace-level Rust maintenance rules.
-- `bazel/platforms/`: host platform registration.
+- `bazel/platforms/`: host and physical board platforms.
 - `bazel/rules/hil/`: generic multi-platform HIL test orchestration.
-- `crates/hil-testing/`: reusable `no_std` framing and opt-in host HIL sessions.
-- `crates/serial-transport/`: shared host serial discovery and reconnect logic.
+- `firmware/services/provisioning/`: portable provisioning policy, storage, and portal assets.
+- `firmware/hil/support/`: reusable `no_std` framing and opt-in host HIL sessions.
+- `tools/serial/`: host serial discovery, reconnect logic, and console.
 - `firmware/hil/`: concrete manual hardware test suites.
 - `MODULE.bazel`: root Bzlmod dependencies, Cargo resolution, extensions, and toolchain registration.
 - `.bazelrc`: shared Bazel configuration. Put workstation-specific settings in the ignored `.bazelrc.user`.
@@ -29,20 +33,20 @@ Run commands from the repository root.
 # Build every target compatible with the host configuration.
 bazel build //...
 
-# Compile the firmware for the ESP32-C6 platform.
-bazel build --config=esp32c6 //firmware:firmware
+# Compile an app for the XIAO ESP32-C6 platform.
+bazel build --config=xiao_esp32c6 //firmware/apps/diagnostics:firmware
 
-# Build the host-side flash launcher and transitioned firmware without touching hardware.
-bazel build //firmware:flash
+# Build a flash launcher and firmware without touching hardware.
+bazel build --platforms=//bazel/platforms:s31_function_coreboard_1 //firmware/apps/diagnostics:flash //firmware/apps/provisioning:flash
 
-# Flash a connected board and start its monitor.
-bazel run //firmware:flash
+# Flash a connected board only when explicitly requested.
+bazel run --platforms=//bazel/platforms:s31_function_coreboard_1 //firmware/apps/diagnostics:flash
 
 # Select a serial device without committing a machine-specific path.
-ESPFLASH_PORT=/dev/... bazel run //firmware:flash
+ESPFLASH_PORT=/dev/... bazel run --platforms=//bazel/platforms:s31_function_coreboard_1 //firmware/apps/diagnostics:flash
 ```
 
-Prefer the smallest relevant build while iterating, then run the broader checks appropriate to the files changed. `bazel build //firmware:flash` is safe in automated validation; `bazel run //firmware:flash` is a hardware operation and must not be run unless the user explicitly asks to flash a connected device.
+Prefer the smallest relevant build while iterating, then run the broader checks appropriate to the files changed. `bazel build` of a flash target is safe in automated validation; `bazel run` of that target is a hardware operation and must not be run unless the user explicitly asks to flash a connected device.
 
 For module, toolchain, patch, crate, Rust-version, or board-configuration changes, run the full validation matrix documented in `bazel/modules/esp32/README.md`:
 
@@ -50,10 +54,12 @@ For module, toolchain, patch, crate, Rust-version, or board-configuration change
 bazel mod tidy
 bazel query '@rules_esp32//... + @espflash//:espflash'
 bazel build //...
-bazel build --config=esp32c6 //firmware:firmware
-bazel build //firmware:flash
-bash -n bazel-bin/firmware/flash
-file bazel-bin/firmware/firmware
+bazel build --config=xiao_esp32c6 //firmware/apps/diagnostics:firmware
+bazel build --platforms=//bazel/platforms:xiao_esp32c6 //firmware/apps/diagnostics:flash //firmware/apps/provisioning:flash
+bazel build --platforms=//bazel/platforms:s31_function_coreboard_1 //firmware/apps/diagnostics:flash //firmware/apps/provisioning:flash
+bazel build //firmware/hil/provisioning:test_xiao_esp32c6 //firmware/hil/provisioning:test_s31_function_coreboard_1
+bash -n bazel-bin/firmware/apps/diagnostics/flash
+file bazel-bin/firmware/apps/diagnostics/firmware
 ```
 
 Report any check that could not run, including whether the reason was missing hardware, unavailable USB access, host incompatibility, or dependency/network access.
@@ -63,8 +69,8 @@ Report any check that could not run, including whether the reason was missing ha
 - Keep builds hermetic. Do not introduce dependencies on a developer's system Rust, Cargo, compiler, SDK, serial-port path, or locally installed `espflash`.
 - Use Bzlmod (`MODULE.bazel`) rather than adding a legacy `WORKSPACE` dependency path.
 - Firmware remains a normal `rust_binary`; board selection belongs in Bazel platforms, constraints, transitions, and configurable attributes.
-- Keep firmware targets incompatible with the default host platform. Follow the existing `target_compatible_with` pattern using `@rules_esp32//platforms:is_esp32c6`.
-- Load public ESP32 rules through `@rules_esp32//:defs.bzl`. Keep rule implementations and board tables under the module's `private/` boundary.
+- Keep firmware targets incompatible with the default host platform using `board_compatibility(...)` from `//firmware/build:selection.bzl`.
+- Load public ESP32 rules through `@rules_esp32//:defs.bzl`. Keep rule implementations under the module's `private/` boundary and physical-board selection under `firmware/build/`.
 - Do not duplicate target-specific linker or optimization flags on individual firmware targets; toolchain policy belongs in `bazel/modules/esp32/MODULE.bazel`.
 - Keep BUILD and `.bzl` files formatted in standard Buildifier style. Preserve explicit visibility and labels.
 - Do not edit generated Bazel output trees (`bazel-*`) or Cargo output (`target/`).
@@ -96,14 +102,14 @@ Report any check that could not run, including whether the reason was missing ha
 
 - Commit `Cargo.lock` and `MODULE.bazel.lock` changes when dependency resolution changes.
 - Keep ESP crate features chip-specific and `no_std`-compatible. Check that build-script features and target-library features remain separated by the existing crate annotations.
-- Treat the ordered `rules_rs` patches as part of the pinned toolchain contract. If changing `rules_rs`, Rust, an adapted crate, or a patch, review all four patches and their README together.
+- Treat the ordered `rules_rs` patches as part of the pinned toolchain contract. If changing `rules_rs`, Rust, an adapted crate, or a patch, review all five patches and their README together.
 
 ## Embedded and Hardware Safety
 
 - Compilation and launcher generation are non-hardware operations; flashing, erasing, resetting, and monitoring interact with a physical device.
 - Never flash, erase, change fuses, modify boot configuration, or select an attached serial device without explicit user authorization.
 - Never add workstation-specific ports, USB identifiers, credentials, Wi-Fi secrets, MAC addresses, or other device-specific values to tracked files. Use environment variables or ignored local configuration.
-- Run physical HIL tests only when explicitly requested. Individual tests use `//firmware/hil/<suite>:test`; `//firmware/hil:tests` runs the full explicitly enumerated hardware suite.
+- Run physical HIL tests only when explicitly requested. Individual provisioning tests use `//firmware/hil/provisioning:test_xiao_esp32c6` and `:test_s31_function_coreboard_1`; `//firmware/hil:tests` enumerates both.
 - Treat eFuse writes and security settings as irreversible. Do not add or execute such operations unless the user clearly requests the exact change and the target device has been confirmed.
 - Prefer bounded waits and timeouts in firmware. Busy loops are acceptable only when deliberate; explain timing, watchdog, power, and CPU-use implications when introducing one.
 - When modifying clocks, interrupts, unsafe register access, linker scripts, memory maps, or boot metadata, document the hardware assumption and validate against the precise chip and revision in scope.
@@ -111,7 +117,7 @@ Report any check that could not run, including whether the reason was missing ha
 
 ## Adding Board Support
 
-Follow the checklist in `bazel/modules/esp32/README.md`: add the chip constraint/platform/config setting, board configuration, named Bazel config, target-triple flags, root Cargo platform triple when needed, and versioned crate adaptations. Extend the existing board model; do not create a separate board-specific Rust rule.
+For another physical board on an existing chip, add a board platform and adapter under `bazel/platforms/` and `firmware/boards/`, then register it in `firmware/build/selection.bzl`. Reuse the chip Cargo workspace. For a new chip, follow `bazel/modules/esp32/README.md` for its target triple, toolchain, Cargo resolution, and crate adaptations. Do not create a board-specific Rust rule.
 
 ## Change Discipline
 

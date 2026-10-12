@@ -9,7 +9,7 @@
               "run",
               "@rules_rs//tools/rust_analyzer:discover_bazel_rust_project",
               "--",
-              "--bazel_arg=--config=esp32c6",
+              "--bazel_arg=--config=xiao_esp32c6",
               "{arg}"
             ],
             "progressLabel": "rules_rs",

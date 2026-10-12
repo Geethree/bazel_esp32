@@ -1,16 +1,10 @@
 """Configuration transitions used by ESP32 device rules."""
 
-def _esp32_platform_transition_impl(_settings, attr):
-    return {
-        "//command_line_option:compilation_mode": attr.compilation_mode,
-        "//command_line_option:platforms": str(attr.platform),
-    }
+def _firmware_mode_transition_impl(_settings, attr):
+    return {"//command_line_option:compilation_mode": attr.compilation_mode}
 
-esp32_platform_transition = transition(
-    implementation = _esp32_platform_transition_impl,
+firmware_mode_transition = transition(
+    implementation = _firmware_mode_transition_impl,
     inputs = [],
-    outputs = [
-        "//command_line_option:compilation_mode",
-        "//command_line_option:platforms",
-    ],
+    outputs = ["//command_line_option:compilation_mode"],
 )

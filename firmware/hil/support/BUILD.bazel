@@ -1,0 +1,37 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+load("//firmware/build:selection.bzl", "portable_crates")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "support",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "hil_testing",
+    edition = "2024",
+    deps = portable_crates(
+        "crc-3.4.0",
+        "heapless-0.8.0",
+    ),
+)
+
+rust_library(
+    name = "host",
+    srcs = glob(["src/**/*.rs"]),
+    aliases = aliases(),
+    crate_features = ["host"],
+    crate_name = "hil_testing",
+    edition = "2024",
+    deps = all_crate_deps(
+        cargo_only = True,
+        normal = True,
+    ) + ["//tools/serial/transport"],
+)
+
+rust_test(
+    name = "unit_tests",
+    crate = ":host",
+)
+
+exports_files(["README.md"])

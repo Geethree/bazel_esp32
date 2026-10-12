@@ -1,0 +1,3 @@
+[workspace]
+members = ["provisioning", "diagnostics", "hil-device"]
+resolver = "3"

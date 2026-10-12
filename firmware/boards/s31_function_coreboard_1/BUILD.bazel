@@ -1,0 +1,21 @@
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+
+rust_library(
+    name = "board",
+    srcs = [
+        "src/lib.rs",
+        "src/provisioning.rs",
+    ],
+    crate_name = "board",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//firmware/boards/api:board_api",
+        "@firmware_s31_crates//:esp-hal-1.2.2",
+        "@firmware_s31_crates//:esp-println-0.18.0",
+    ],
+)
+
+exports_files(["partitions.csv"])

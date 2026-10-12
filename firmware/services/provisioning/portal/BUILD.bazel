@@ -1,0 +1,68 @@
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
+load(":exec_file.bzl", "exec_file")
+
+package(default_visibility = ["//visibility:public"])
+
+esbuild(
+    name = "styles",
+    srcs = ["styles.css"],
+    entry_point = "styles.css",
+    minify = True,
+    output = "styles.min.css",
+    sourcemap = False,
+)
+
+esbuild(
+    name = "script",
+    srcs = ["main.js"],
+    entry_point = "main.js",
+    minify = True,
+    output = "main.min.js",
+    sourcemap = False,
+    target = ["es2019"],
+)
+
+js_binary(
+    name = "packager",
+    entry_point = "pack.mjs",
+)
+
+js_run_binary(
+    name = "assets",
+    srcs = [
+        "index.html",
+        ":script",
+        ":styles",
+    ],
+    outs = [
+        "portal.min.html",
+        "portal_asset.rs",
+    ],
+    args = [
+        "$(location index.html)",
+        "$(location :styles)",
+        "$(location :script)",
+        "$(location portal.min.html)",
+        "$(location portal_asset.rs)",
+    ],
+    chdir = "../../..",
+    copy_srcs_to_bin = False,
+    tags = ["manual"],
+    tool = ":packager",
+)
+
+# The web toolchain runs on the execution platform even when this generated
+# Rust source is consumed by an ESP32-configured rust_library.
+exec_file(
+    name = "embedded_asset",
+    src = ":portal_asset.rs",
+)
+
+js_binary(
+    name = "preview",
+    data = [":portal.min.html"],
+    entry_point = "preview.mjs",
+    fixed_args = ["$(rootpath :portal.min.html)"],
+    tags = ["manual"],
+)

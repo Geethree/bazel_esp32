@@ -13,7 +13,7 @@ rust_crate(
     deps = [],
     data = [],
     crate_features = [],
-    triples = ["riscv32imac-unknown-none-elf"],
+    triples = ["riscv32imac-unknown-none-elf", "riscv32imafc-unknown-none-elf"],
     conditional_crate_features = {},
     crate_root = "src/lib.rs",
     edition = "2021",
@@ -40,6 +40,7 @@ alias(
     name = "log-contextual",
     actual = select({
         "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": ":log-no-std",
+        "@rules_rs//rs/platforms/config:riscv32imafc-unknown-none-elf": ":log-no-std",
         "//conditions:default": ":log",
     }),
     visibility = ["//visibility:public"],

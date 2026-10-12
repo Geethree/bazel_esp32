@@ -1,0 +1,82 @@
+# Added to the generated esp-config 0.8.0 crate repository by rules_rs.
+#
+# Cargo resolves esp-config with its `build` feature for host build scripts and
+# without that feature for target libraries. rules_rs v0.0.96 unifies those
+# contexts into one generated target. Keep the generated target for host tools,
+# and provide this no_std target for ESP32-S31 target dependencies.
+
+rust_crate(
+    name = "esp-config-no-std-c6",
+    crate_name = "esp_config",
+    purl = "pkg:cargo/esp-config@0.8.0",
+    version = "0.8.0",
+    aliases = {},
+    deps = ["@firmware_c6_crates//:document-features-0.2.12"],
+    data = [],
+    crate_features = ["default"],
+    triples = ["riscv32imac-unknown-none-elf"],
+    conditional_crate_features = {},
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    rustc_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    rustc_flags = [],
+    tags = [],
+    target_compatible_with = RESOLVED_PLATFORMS,
+    links = None,
+    build_script = False,
+    build_script_data = [],
+    build_deps = [],
+    build_script_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    allow_build_script_to_detect_nonhermetic_paths = False,
+    build_script_toolchains = [],
+    build_script_tools = [],
+    build_script_tags = [],
+    is_proc_macro = False,
+    has_lib = True,
+    binaries = {},
+    use_legacy_rules_rust_platforms = False,
+)
+
+rust_crate(
+    name = "esp-config-no-std",
+    crate_name = "esp_config",
+    purl = "pkg:cargo/esp-config@0.8.0",
+    version = "0.8.0",
+    aliases = {},
+    deps = [
+        "@firmware_s31_crates//:document-features-0.2.12",
+    ],
+    data = [],
+    crate_features = ["default"],
+    triples = ["riscv32imafc-unknown-none-elf"],
+    conditional_crate_features = {},
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    rustc_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    rustc_flags = [],
+    tags = [],
+    target_compatible_with = RESOLVED_PLATFORMS,
+    links = None,
+    build_script = False,
+    build_script_data = [],
+    build_deps = [],
+    build_script_env = {"CARGO_MANIFEST_PATH": "$(execpath :Cargo.toml)"},
+    allow_build_script_to_detect_nonhermetic_paths = False,
+    build_script_toolchains = [],
+    build_script_tools = [],
+    build_script_tags = [],
+    is_proc_macro = False,
+    has_lib = True,
+    binaries = {},
+    use_legacy_rules_rust_platforms = False,
+)
+
+alias(
+    name = "esp-config-contextual",
+    actual = select({
+        "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": ":esp-config-no-std-c6",
+        "@rules_rs//rs/platforms/config:riscv32imafc-unknown-none-elf": ":esp-config-no-std",
+        "//conditions:default": ":esp-config",
+    }),
+    visibility = ["//visibility:public"],
+)

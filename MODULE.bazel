@@ -27,11 +27,30 @@ crate.from_cargo(
     cargo_toml = "//:Cargo.toml",
     platform_triples = [
         "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+crate.from_cargo(
+    name = "firmware_c6_crates",
+    cargo_lock = "//firmware/chips/esp32c6:Cargo.lock",
+    cargo_toml = "//firmware/chips/esp32c6:Cargo.toml",
+    platform_triples = [
+        "aarch64-apple-darwin",
         "riscv32imac-unknown-none-elf",
         "x86_64-unknown-linux-gnu",
     ],
 )
-use_repo(crate, "crates")
+crate.from_cargo(
+    name = "firmware_s31_crates",
+    cargo_lock = "//firmware/chips/esp32s31:Cargo.lock",
+    cargo_toml = "//firmware/chips/esp32s31:Cargo.toml",
+    platform_triples = [
+        "aarch64-apple-darwin",
+        "riscv32imafc-unknown-none-elf",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
+use_repo(crate, "crates", "firmware_c6_crates", "firmware_s31_crates")
 
 esp32 = use_extension("@rules_esp32//:extensions.bzl", "esp32")
 use_repo(esp32, "espflash")

@@ -3,5 +3,6 @@ exports_files([
     "0003-fix-normalize-RISC-V-target-arch-in-Cargo-cfgs.patch",
     "0004-feat-allow-dependency-modules-to-annotate-crate-repo.patch",
     "0005-fix-avoid-esp-phy-build-script-data-cycle.patch",
+    "0006-add-rv32imafc-target.patch",
     "README.md",
 ])

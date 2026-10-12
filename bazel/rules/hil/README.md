@@ -13,8 +13,9 @@ library before invoking the caller-provided host executable.
 Callers may provide fixed `env` values or declare host variables through
 `env_inherit`; the rule forwards both without knowing their meaning.
 
-HIL targets are always tagged `manual`, `local`, and `exclusive`. Compilation
-may use RBE, but test execution never runs remotely.
+The `hil_test` macro adds `local`, `hil`, and an `esp32_slots` resource tag.
+Concrete suites add `manual` so they run only when explicitly requested.
+Compilation may use RBE, but test execution never runs remotely.
 
 Concrete tests live with their firmware under `//firmware/hil/...`; this package
 contains no device, transport, or application-specific test implementation.

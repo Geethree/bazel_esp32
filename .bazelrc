@@ -4,8 +4,10 @@ common --repo_env=ASPECT_TOOLS_TELEMETRY=-all
 
 common --extra_execution_platforms=@bazel_tools//tools:host_platform
 
-build:esp32c6 --platforms=@rules_esp32//platforms:esp32c6
-build:esp32c6 --compilation_mode=opt
+build:xiao_esp32c6 --platforms=//bazel/platforms:xiao_esp32c6
+build:xiao_esp32c6 --compilation_mode=opt
+build:s31_function_coreboard_1 --platforms=//bazel/platforms:s31_function_coreboard_1
+build:s31_function_coreboard_1 --compilation_mode=opt
 
 build --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
 build --output_groups=+clippy_checks

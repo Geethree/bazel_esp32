@@ -1,25 +1,42 @@
-load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_esp32//:defs.bzl", "esp32_flash")
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("//firmware/build:selection.bzl", "board", "board_compatibility", "chip_crates", "selected_chip", "selected_partitions")
 
-_ALIASES = dict(aliases())
-_ALIASES.update({
-    "//crates/hil-testing": "hil_testing",
-    "//crates/wifi-provisioning:wifi_provisioning_hil": "wifi_provisioning",
-})
+package(default_visibility = ["//visibility:public"])
 
 rust_binary(
     name = "firmware",
     srcs = ["src/main.rs"],
-    aliases = _ALIASES,
-    crate_name = "provisioning_hil_device",
+    crate_name = "firmware_provisioning_hil",
     edition = "2024",
-    target_compatible_with = select({
-        "@rules_esp32//platforms:is_esp32c6": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    visibility = ["//firmware/hil/provisioning:__pkg__"],
-    deps = all_crate_deps(normal = True, cargo_only = True) + [
-        "//crates/hil-testing",
-        "//crates/wifi-provisioning:wifi_provisioning_hil",
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
+    deps = board() + chip_crates(
+        "embassy-executor-0.10.0",
+        "embassy-futures-0.1.2",
+        "embassy-net-0.8.0",
+        "embassy-time-0.5.1",
+        "embedded-io-async-0.7.0",
+        "esp-alloc-0.11.0",
+        "esp-bootloader-esp-idf-0.6.0",
+        "esp-hal-1.2.2",
+        "esp-println-0.18.0",
+        "esp-radio-1.0.0-beta.1",
+        "esp-rtos-0.4.0",
+        "esp-storage-0.10.0",
+        "heapless-0.8.0",
+        "static_cell-2.1.1",
+    ) + [
+        "//firmware/hil/support",
+        "//firmware/services/provisioning:hil",
     ],
+)
+
+esp32_flash(
+    name = "flash",
+    chip = selected_chip(),
+    espflash = "@espflash//:espflash",
+    firmware = ":firmware",
+    monitor = False,
+    partition_table = selected_partitions(),
+    target_compatible_with = board_compatibility("xiao_esp32c6", "s31_function_coreboard_1"),
 )

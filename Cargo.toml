@@ -1,12 +1,10 @@
 [workspace]
 members = [
-    "crates/hil-testing",
-    "crates/serial-transport",
-    "crates/wifi-provisioning",
-    "firmware",
-    "firmware/hil/provisioning/device",
+    "firmware/hil/support",
+    "tools/serial/transport",
+    "firmware/services/provisioning",
     "firmware/hil/provisioning/host",
     "bazel/rules/hil",
-    "crates/serial-console",
+    "tools/serial/console",
 ]
 resolver = "3"

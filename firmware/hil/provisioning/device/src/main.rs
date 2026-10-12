@@ -12,15 +12,14 @@ use embedded_io_async::{Read, Write};
 use esp_hal::{
     clock::CpuClock,
     efuse::{self, InterfaceMacAddress},
-    interrupt::software::SoftwareInterruptControl,
     rng::Rng,
     system::software_reset,
     timer::timg::TimerGroup,
-    usb_serial_jtag::UsbSerialJtag,
+    usb::usb_serial_jtag::UsbSerialJtag,
 };
 use esp_radio::wifi::{
-    AuthenticationMethod, Config as WifiConfig, ControllerConfig, Interface, WifiController,
-    scan::ScanConfig, sta::StationConfig,
+    AuthenticationMethod, AuthenticationMethodConfig, Config as WifiConfig, ControllerConfig,
+    Interface, Password, Ssid, WifiController, scan::ScanConfig, sta::StationConfig,
 };
 use heapless::Vec;
 use hil_testing::{Frame, FrameError, FrameKind, HEADER_LEN, decode_frame, encode, encoded_len};
@@ -30,7 +29,6 @@ use wifi_provisioning::{
     PortalService, PortalStatus, hil::Control,
 };
 
-const WIFI_CFG_OFFSET: u32 = 0x3f0000;
 const _: () = assert!(wifi_provisioning::HIL_ENABLED);
 
 esp_bootloader_esp_idf::esp_app_desc!();
@@ -57,18 +55,17 @@ async fn main(spawner: Spawner) -> ! {
     esp_alloc::heap_allocator!(size: 72 * 1024);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-    esp_rtos::start(timg0.timer0, sw_int.software_interrupt0);
+    esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0);
 
     let mut serial = UsbSerialJtag::new(peripherals.USB_DEVICE).into_async();
     let mut store = FlashJournal::new(
         esp_storage::FlashStorage::new(peripherals.FLASH),
-        WIFI_CFG_OFFSET,
+        board::WIFI_CFG_OFFSET,
     );
     let mut portal = PortalService::new();
     let mut input = Vec::<u8, 2048>::new();
 
-    let (mut controller, interfaces) = esp_radio::wifi::new(
+    let mut controller = WifiController::new(
         peripherals.WIFI,
         ControllerConfig::default()
             .with_initial_config(WifiConfig::Station(StationConfig::default())),
@@ -77,7 +74,7 @@ async fn main(spawner: Spawner) -> ! {
     let rng = Rng::new();
     let seed = (rng.random() as u64) << 32 | rng.random() as u64;
     let (station, runner) = embassy_net::new(
-        interfaces.station,
+        Interface::station(),
         embassy_net::Config::dhcpv4(Default::default()),
         mk_static!(StackResources<5>, StackResources::new()),
         seed,
@@ -277,13 +274,14 @@ async fn connect_station(
     credentials: &Credentials,
 ) -> Result<(), heapless::String<64>> {
     let auth_method = match credentials.authentication() {
-        Authentication::Open => AuthenticationMethod::None,
-        Authentication::Personal => AuthenticationMethod::Wpa2Personal,
+        Authentication::Open => AuthenticationMethodConfig::Open,
+        Authentication::Personal => AuthenticationMethodConfig::Wpa2Personal(
+            Password::try_from(credentials.password()).expect("valid Wi-Fi password"),
+        ),
     };
     let station_config = StationConfig::default()
-        .with_ssid(credentials.ssid())
-        .with_auth_method(auth_method)
-        .with_password(credentials.password().into());
+        .with_ssid(Ssid::try_from(credentials.ssid()).expect("valid Wi-Fi SSID"))
+        .with_authentication(auth_method);
     let mut associated = false;
     for attempt in 0..5 {
         if controller
@@ -301,11 +299,6 @@ async fn connect_station(
             Either::First(Ok(_)) => {
                 associated = true;
                 break;
-            }
-            Either::First(Err(esp_radio::wifi::WifiError::Disconnected(info))) => {
-                let mut failure = heapless::String::new();
-                write!(failure, "association-failed:{:?}", info.reason).unwrap();
-                failure
             }
             Either::First(Err(error)) => {
                 let mut failure = heapless::String::new();
@@ -352,7 +345,7 @@ async fn send_network_events(
 }
 
 #[embassy_executor::task]
-async fn network_runner(mut runner: Runner<'static, Interface<'static>>) {
+async fn network_runner(mut runner: Runner<'static, Interface>) {
     runner.run().await;
 }
 

@@ -1,5 +1,46 @@
-load(":platforms.bzl", "register_platforms")
-
 package(default_visibility = ["//visibility:public"])
 
-register_platforms()
+# Execution platforms registered by the root MODULE.bazel.
+platform(
+    name = "linux_x86_64_gnu",
+    exec_properties = {
+        "Arch": "amd64",
+        "OSFamily": "Linux",
+    },
+    parents = ["@llvm//platforms:linux_x86_64"],
+)
+
+platform(
+    name = "linux_aarch64_gnu",
+    parents = ["@llvm//platforms:linux_aarch64"],
+)
+
+platform(
+    name = "macos_aarch64",
+    parents = ["@llvm//platforms:macos_aarch64"],
+)
+
+# Physical target boards inherit their chip and Rust target constraints.
+constraint_setting(name = "board")
+
+constraint_value(
+    name = "board_xiao_esp32c6",
+    constraint_setting = ":board",
+)
+
+constraint_value(
+    name = "board_s31_function_coreboard_1",
+    constraint_setting = ":board",
+)
+
+platform(
+    name = "xiao_esp32c6",
+    constraint_values = [":board_xiao_esp32c6"],
+    parents = ["@rules_esp32//platforms:esp32c6"],
+)
+
+platform(
+    name = "s31_function_coreboard_1",
+    constraint_values = [":board_s31_function_coreboard_1"],
+    parents = ["@rules_esp32//platforms:esp32s31"],
+)

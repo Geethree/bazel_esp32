@@ -1,0 +1,14 @@
+[package]
+name = "firmware-esp32s31-diagnostics"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "firmware-diagnostics"
+path = "../../../apps/diagnostics/src/main.rs"
+
+[dependencies]
+esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32s31"] }
+esp-hal = { version = "=1.2.2", features = ["esp32s31", "unstable"] }
+esp-println = { version = "0.18.0", default-features = false, features = ["esp32s31", "auto"] }

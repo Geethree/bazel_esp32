@@ -1,7 +1,6 @@
 """Implementation of the ESP32 flash rule."""
 
-load(":boards.bzl", "board_config")
-load(":transitions.bzl", "esp32_platform_transition")
+load(":transitions.bzl", "firmware_mode_transition")
 
 def _runfiles_path(file, workspace_name):
     if file.short_path.startswith("../"):
@@ -64,43 +63,29 @@ exec "${{espflash}}" "${{args[@]}}" "${{firmware}}"
         runfiles = ctx.runfiles(files = [espflash, firmware] + partition_table_runfile),
     )]
 
-_esp32_flash = rule(
+esp32_flash = rule(
     implementation = _esp32_flash_impl,
     attrs = {
         "baud": attr.int(default = 115200),
         "chip": attr.string(mandatory = True),
-        "compilation_mode": attr.string(mandatory = True),
+        "compilation_mode": attr.string(default = "opt"),
         "espflash": attr.label(
             allow_single_file = True,
             cfg = "exec",
             mandatory = True,
         ),
         "firmware": attr.label(
-            cfg = esp32_platform_transition,
+            cfg = firmware_mode_transition,
             executable = True,
             mandatory = True,
         ),
         "monitor": attr.bool(default = True),
         "partition_table": attr.label(allow_single_file = [".csv"]),
-        "platform": attr.label(mandatory = True),
         "port": attr.string(),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),
     },
-    doc = "Flashes an ESP32 ELF locally with espflash and optionally monitors it.",
+    doc = "Flashes firmware for the selected target platform without replacing that platform.",
     executable = True,
 )
-
-def esp32_flash(name, board, espflash, firmware, **kwargs):
-    """Creates a host flash target for firmware built for a supported board."""
-    config = board_config(board)
-    _esp32_flash(
-        name = name,
-        chip = config.chip,
-        compilation_mode = config.compilation_mode,
-        espflash = espflash,
-        firmware = firmware,
-        platform = config.platform,
-        **kwargs
-    )

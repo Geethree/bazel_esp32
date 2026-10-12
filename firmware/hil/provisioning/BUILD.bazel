@@ -1,29 +1,57 @@
 load("//bazel/rules/hil:defs.bzl", "hil_test")
 
+_COMMON_ARGS = [
+    "--espflash",
+    "{espflash}",
+    "--firmware",
+    "{firmware}",
+    "--partition-table",
+    "{partition_table}",
+    "--wifi-offset",
+    "0x3f0000",
+    "--wifi-size",
+    "0x2000",
+]
+
 hil_test(
-    name = "test",
-    args = [
-        "--espflash",
-        "{espflash}",
-        "--firmware",
-        "{firmware}",
-        "--partition-table",
-        "{partition_table}",
+    name = "test_xiao_esp32c6",
+    args = _COMMON_ARGS + [
         "--chip",
         "esp32c6",
-        "--wifi-offset",
-        "0x3f0000",
-        "--wifi-size",
-        "0x2000",
     ],
-    data = {"//firmware:partitions.csv": "partition_table"},
+    data = {"//firmware/boards/xiao_esp32c6:partitions.csv": "partition_table"},
     env_inherit = [
         "HIL_WIFI_PASSWORD",
         "HIL_WIFI_SSID",
     ],
-    firmware = "//firmware/hil/provisioning/device:firmware",
-    firmware_platform = "@rules_esp32//platforms:esp32c6",
+    firmware = ":device",
+    firmware_platform = "//bazel/platforms:xiao_esp32c6",
     host = "//firmware/hil/provisioning/host:host",
     host_tools = {"@espflash//:espflash": "espflash"},
     runner_platform = "@platforms//host:host",
+    tags = ["manual"],
+)
+
+hil_test(
+    name = "test_s31_function_coreboard_1",
+    args = _COMMON_ARGS + [
+        "--chip",
+        "esp32s31",
+    ],
+    data = {"//firmware/boards/s31_function_coreboard_1:partitions.csv": "partition_table"},
+    env_inherit = [
+        "HIL_WIFI_PASSWORD",
+        "HIL_WIFI_SSID",
+    ],
+    firmware = ":device",
+    firmware_platform = "//bazel/platforms:s31_function_coreboard_1",
+    host = "//firmware/hil/provisioning/host:host",
+    host_tools = {"@espflash//:espflash": "espflash"},
+    runner_platform = "@platforms//host:host",
+    tags = ["manual"],
+)
+
+alias(
+    name = "device",
+    actual = "//firmware/hil/provisioning/device:firmware",
 )

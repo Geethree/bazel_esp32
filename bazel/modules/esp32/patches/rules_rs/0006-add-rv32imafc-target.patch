@@ -1,0 +1,85 @@
+diff --git a/rs/platforms/triples.bzl b/rs/platforms/triples.bzl
+--- a/rs/platforms/triples.bzl
++++ b/rs/platforms/triples.bzl
+@@ -6,6 +6,7 @@
+ 
+ _RISCV_ISA_CONSTRAINTS = {
+     "riscv32imac-unknown-none-elf": "@rules_rs//rs/platforms/constraints:rv32imac",
++    "riscv32imafc-unknown-none-elf": "@rules_rs//rs/platforms/constraints:rv32imafc",
+     "riscv32imc-unknown-none-elf": "@rules_rs//rs/platforms/constraints:rv32imc",
+ }
+ 
+@@ -12,7 +13,10 @@
+ def triple_to_rust_constraint_set(target_triple):
+-    constraints = _triple_to_constraint_set(target_triple)
++    # rules_rust maps RV32IMAC but does not yet recognize the RV32IMAFC CPU.
++    # Both have the same generic RISC-V CPU constraint; select the ISA below.
++    mapped_triple = "riscv32imac-unknown-none-elf" if target_triple == "riscv32imafc-unknown-none-elf" else target_triple
++    constraints = _triple_to_constraint_set(mapped_triple)
+     t = triple(target_triple)
+ 
+@@ -144,7 +145,7 @@
+     # "riscv32i-unknown-none-elf",       # * Bare RISC-V (RV32I ISA)
+     # "riscv32im-unknown-none-elf",      # * Bare RISC-V (RV32IM ISA)
+     "riscv32imac-unknown-none-elf",  # * Bare RISC-V (RV32IMAC ISA)
+-    # "riscv32imafc-unknown-none-elf",   # * Bare RISC-V (RV32IMAFC ISA)
++    "riscv32imafc-unknown-none-elf",  # * Bare RISC-V (RV32IMAFC ISA)
+     "riscv32imc-unknown-none-elf",  # * Bare RISC-V (RV32IMC ISA)
+     "riscv64gc-unknown-linux-musl",  # ✓ RISC-V Linux (kernel 4.20+, musl 1.2.5)
+     "riscv64gc-unknown-none-elf",  # * Bare RISC-V (RV64IMAFDC ISA)
+diff --git a/rs/platforms/constraints/BUILD.bazel b/rs/platforms/constraints/BUILD.bazel
+--- a/rs/platforms/constraints/BUILD.bazel
++++ b/rs/platforms/constraints/BUILD.bazel
+@@ -36,6 +36,12 @@
+ constraint_value(
+     # ESP32-C6 and ESP32-H2 use the atomic-capable RV32IMAC target.
+     name = "rv32imac",
++    constraint_setting = "riscv_isa",
++)
++
++constraint_value(
++    # ESP32-S31 uses the floating-point RV32IMAFC target.
++    name = "rv32imafc",
+     constraint_setting = "riscv_isa",
+ )
+ 
+diff --git a/rs/toolchains/declare_rustc_toolchains.bzl b/rs/toolchains/declare_rustc_toolchains.bzl
+--- a/rs/toolchains/declare_rustc_toolchains.bzl
++++ b/rs/toolchains/declare_rustc_toolchains.bzl
+@@ -104,6 +104,7 @@
+             llvm_profdata = "@llvm//tools:llvm-profdata",
+             linker = select({
+                 "@rules_rs//rs/platforms/config:riscv32imac-unknown-none-elf": lld_label,
++                "@rules_rs//rs/platforms/config:riscv32imafc-unknown-none-elf": lld_label,
+                 "@rules_rs//rs/platforms/config:riscv32imc-unknown-none-elf": lld_label,
+                 "@platforms//cpu:wasm32": lld_label,
+                 "@platforms//cpu:wasm64": lld_label,
+diff --git a/rs/private/cfg_parser_test.bzl b/rs/private/cfg_parser_test.bzl
+--- a/rs/private/cfg_parser_test.bzl
++++ b/rs/private/cfg_parser_test.bzl
+@@ -15,6 +15,7 @@
+     win_gnullvm = "aarch64-pc-windows-gnullvm"
+     wasm = "wasm32-unknown-unknown"
+     riscv32imac = "riscv32imac-unknown-none-elf"
++    riscv32imafc = "riscv32imafc-unknown-none-elf"
+     riscv64gc = "riscv64gc-unknown-linux-musl"
+ 
+     # MacOS facts facts
+@@ -54,6 +55,9 @@
+     asserts.true(env, cfg_matches(_cfg('target_arch = "riscv32"'), riscv32imac))
+     asserts.true(env, cfg_matches(_cfg('target_pointer_width = "32"'), riscv32imac))
+     asserts.false(env, cfg_matches(_cfg('target_arch = "riscv32imac"'), riscv32imac))
++    asserts.true(env, cfg_matches(_cfg('target_arch = "riscv32"'), riscv32imafc))
++    asserts.true(env, cfg_matches(_cfg('target_pointer_width = "32"'), riscv32imafc))
++    asserts.false(env, cfg_matches(_cfg('target_arch = "riscv32imafc"'), riscv32imafc))
+     asserts.true(env, cfg_matches(_cfg('target_arch = "riscv64"'), riscv64gc))
+     asserts.true(env, cfg_matches(_cfg('target_pointer_width = "64"'), riscv64gc))
+     asserts.false(env, cfg_matches(_cfg('target_arch = "riscv64gc"'), riscv64gc))
+@@ -74,6 +78,6 @@
+     asserts.true(env, cfg_matches(_cfg('target_feature = "sse2"'), linux_gnu))
+     asserts.false(env, cfg_matches(_cfg('target_feature = "sse2"'), mac))
+ 
+-    triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm, riscv32imac, riscv64gc]
++    triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm, riscv32imac, riscv32imafc, riscv64gc]
+ 
+     results = cfg_matches_expr_for_triples(_cfg('all(unix, any(target_env = "gnu", target_env = "musl"))'), triples)

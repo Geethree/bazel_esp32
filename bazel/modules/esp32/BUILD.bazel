@@ -2,6 +2,5 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files([
     "README.md",
-    "esp32.bazelrc",
     "rules_rs_override.MODULE.bazel",
 ])
